@@ -1,0 +1,136 @@
+import { Router } from 'express';
+import multer from 'multer';
+import { nanoid } from 'nanoid';
+import db from '../db/index.js';
+import { parseSpreadsheet, normalizePhone, normalizeEmail } from '../services/spreadsheetParser.js';
+
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
+
+const router = Router();
+
+// Step 1: upload a spreadsheet and get back a preview (columns + rows) without persisting yet
+router.post('/preview', upload.single('file'), async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'Nenhum arquivo enviado.' });
+  }
+  try {
+    const preview = await parseSpreadsheet(req.file.buffer, req.file.originalname);
+    res.json(preview);
+  } catch (err) {
+    res.status(400).json({ error: `Não foi possível ler a planilha: ${err.message}` });
+  }
+});
+
+// Step 2: confirm the import with column mapping chosen by the user
+router.post('/import', async (req, res) => {
+  const { fileName, rows, nameColumn, phoneColumn, emailColumn, extraColumns = [], batchLabel } = req.body;
+
+  if (!Array.isArray(rows) || rows.length === 0) {
+    return res.status(400).json({ error: 'Nenhuma linha para importar.' });
+  }
+  if (!nameColumn || (!phoneColumn && !emailColumn)) {
+    return res.status(400).json({ error: 'Informe a coluna de nome e ao menos uma de telefone ou email.' });
+  }
+
+  const batchId = nanoid();
+  const now = new Date().toISOString();
+
+  const imported = [];
+  const skipped = [];
+
+  for (const row of rows) {
+    const phone = phoneColumn ? normalizePhone(row[phoneColumn]) : '';
+    const email = emailColumn ? normalizeEmail(row[emailColumn]) : '';
+    const name = String(row[nameColumn] ?? '').trim();
+
+    const validPhone = phone && phone.replace('+', '').length >= 8;
+    const validEmail = Boolean(email);
+
+    if (!validPhone && !validEmail) {
+      skipped.push({ row, reason: 'Telefone e email inválidos ou vazios' });
+      continue;
+    }
+
+    const extras = {};
+    for (const col of extraColumns) {
+      if (col !== nameColumn && col !== phoneColumn && col !== emailColumn) {
+        extras[col] = row[col];
+      }
+    }
+
+    imported.push({
+      id: nanoid(),
+      batchId,
+      name: name || '(sem nome)',
+      phone: validPhone ? phone : '',
+      email: validEmail ? email : '',
+      extras,
+      createdAt: now
+    });
+  }
+
+  db.data.batches.push({
+    id: batchId,
+    label: batchLabel || fileName || `Importação ${new Date(now).toLocaleString('pt-BR')}`,
+    fileName: fileName || null,
+    totalRows: rows.length,
+    importedCount: imported.length,
+    skippedCount: skipped.length,
+    createdAt: now
+  });
+  db.data.contacts.push(...imported);
+  await db.write();
+
+  res.status(201).json({
+    batchId,
+    importedCount: imported.length,
+    skippedCount: skipped.length,
+    skipped: skipped.slice(0, 50)
+  });
+});
+
+router.get('/batches', (req, res) => {
+  const batches = [...db.data.batches].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  res.json(batches);
+});
+
+router.delete('/batches/:batchId', async (req, res) => {
+  const { batchId } = req.params;
+  const before = db.data.contacts.length;
+  db.data.contacts = db.data.contacts.filter((c) => c.batchId !== batchId);
+  db.data.batches = db.data.batches.filter((b) => b.id !== batchId);
+  await db.write();
+  res.json({ removedContacts: before - db.data.contacts.length });
+});
+
+router.get('/', (req, res) => {
+  const { batchId, search } = req.query;
+  let contacts = db.data.contacts;
+
+  if (batchId) {
+    contacts = contacts.filter((c) => c.batchId === batchId);
+  }
+  if (search) {
+    const term = String(search).toLowerCase();
+    contacts = contacts.filter(
+      (c) =>
+        c.name.toLowerCase().includes(term) ||
+        c.phone.includes(term) ||
+        (c.email ?? '').includes(term)
+    );
+  }
+
+  res.json({ total: contacts.length, contacts });
+});
+
+router.delete('/:id', async (req, res) => {
+  const before = db.data.contacts.length;
+  db.data.contacts = db.data.contacts.filter((c) => c.id !== req.params.id);
+  await db.write();
+  if (db.data.contacts.length === before) {
+    return res.status(404).json({ error: 'Contato não encontrado.' });
+  }
+  res.status(204).end();
+});
+
+export default router;

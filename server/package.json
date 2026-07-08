@@ -1,0 +1,25 @@
+{
+  "name": "skbotmessager-server",
+  "version": "1.0.0",
+  "description": "Backend do SKBotmessager - disparo em massa de SMS e WhatsApp via planilha",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "csv-parse": "^5.5.6",
+    "dotenv": "^16.4.5",
+    "exceljs": "^4.4.0",
+    "express": "^4.19.2",
+    "lowdb": "^7.0.1",
+    "multer": "^2.0.0",
+    "nanoid": "^5.0.7",
+    "nodemailer": "^9.0.3",
+    "qrcode": "^1.5.4",
+    "twilio": "^5.2.2",
+    "whatsapp-web.js": "^1.26.0"
+  }
+}

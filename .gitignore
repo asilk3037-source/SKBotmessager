@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.env
+*.log
+
+# Backend runtime data (contacts, campaigns, WhatsApp session) - stays local, never committed
+server/data/*
+!server/data/.gitkeep
