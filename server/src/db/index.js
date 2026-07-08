@@ -3,7 +3,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DB_FILE = path.join(__dirname, '..', '..', 'data', 'db.json');
+// Overridable so tests (and any other alternate deployment) never touch the real data file.
+const DB_FILE = process.env.SKBOT_DB_FILE || path.join(__dirname, '..', '..', 'data', 'db.json');
 
 const defaultData = {
   contacts: [],

@@ -74,6 +74,19 @@ npm run build   # gera o build do frontend
 npm start       # backend serve o frontend já buildado, tudo na porta 3001
 ```
 
+## Rodando os testes
+
+Backend e frontend têm suítes de teste separadas (Vitest), com testes unitários e de integração e relatório
+de cobertura. Rodam automaticamente em todo push/PR via GitHub Actions (`.github/workflows/tests.yml`).
+
+```bash
+cd server && npm test            # testes unitários + integração das rotas (Supertest)
+cd server && npm run test:coverage
+
+cd web && npm test                # testes de componente (Testing Library)
+cd web && npm run test:coverage
+```
+
 ## Estrutura do projeto
 
 ```

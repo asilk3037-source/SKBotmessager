@@ -223,8 +223,13 @@ export default function DisparoPage() {
             </div>
           </div>
           <div className="field">
-            <label>Nome da campanha (opcional, aparece no relatório)</label>
-            <input type="text" value={campaignName} onChange={(e) => setCampaignName(e.target.value)} />
+            <label htmlFor="campaign-name">Nome da campanha (opcional, aparece no relatório)</label>
+            <input
+              id="campaign-name"
+              type="text"
+              value={campaignName}
+              onChange={(e) => setCampaignName(e.target.value)}
+            />
           </div>
         </div>
       )}
