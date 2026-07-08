@@ -28,12 +28,15 @@ dispare para todo mundo de uma vez e acompanhe tudo pelo relatório.
   WhatsApp Web no navegador). **Não é a API oficial da Meta** — é gratuita, mas por não ser oficial, envios
   muito grandes ou muito rápidos aumentam o risco do número ser temporariamente bloqueado. Use com
   moderação e prefira um intervalo maior entre mensagens em disparos grandes.
-- **SMS**: camada plugável — hoje vem com **Twilio** (provedor real, pago, mas com crédito de teste
-  gratuito ao criar conta) e um provedor **Simulado** (não envia nada de verdade, só para testar o fluxo
-  completo sem gastar nada). Não existe gateway de SMS gratuito e confiável em volume; se você já usa outro
-  provedor, dá para adicionar um novo arquivo em `server/src/services/sms-providers/` seguindo o mesmo
-  formato do `twilioProvider.js`. Veja [docs/futuro-sms-via-celular.md](docs/futuro-sms-via-celular.md) para
-  a ideia (ainda não implementada) de enviar SMS pelo chip do seu próprio celular.
+- **SMS**: camada plugável, com três opções hoje:
+  - **Twilio** (provedor real, pago, mas com crédito de teste gratuito ao criar conta);
+  - **Celular Android** (grátis, usa o chip/plano do seu próprio celular via o app
+    [SMS Gateway for Android](https://sms-gate.app/) — veja
+    [docs/sms-via-celular-android.md](docs/sms-via-celular-android.md) para o passo a passo);
+  - **Simulado** (não envia nada de verdade, só para testar o fluxo completo sem gastar nada).
+
+  Se quiser usar outro provedor, dá para adicionar um novo arquivo em
+  `server/src/services/sms-providers/` seguindo o mesmo formato do `twilioProvider.js`.
 - **Email**: usa sua conta do Gmail via SMTP com "senha de app" (gratuito, limite de uso diário do Gmail).
   Gere a senha de app em `myaccount.google.com/apppasswords`.
 
@@ -58,7 +61,8 @@ Abra `http://localhost:5173` no navegador.
 3. Vá em **Configurações**:
    - Para WhatsApp: clique em "Conectar WhatsApp" e escaneie o QR code pelo celular (WhatsApp → Aparelhos
      conectados → Conectar um aparelho).
-   - Para SMS: escolha "Simulado" para testar sem custo, ou configure suas credenciais da Twilio.
+   - Para SMS: escolha "Simulado" para testar sem custo, configure suas credenciais da Twilio, ou conecte
+     seu próprio celular Android (veja [docs/sms-via-celular-android.md](docs/sms-via-celular-android.md)).
    - Para Email: informe seu Gmail e uma senha de app (não é a senha normal da sua conta Google).
 4. Vá em **Disparo em massa**, selecione os contatos, o canal e o template, confira a prévia e dispare.
 5. Acompanhe tudo em **Relatórios**, com opção de exportar CSV.

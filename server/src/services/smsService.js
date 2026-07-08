@@ -1,10 +1,12 @@
 import db from '../db/index.js';
 import twilioProvider from './sms-providers/twilioProvider.js';
 import mockProvider from './sms-providers/mockProvider.js';
+import androidGatewayProvider from './sms-providers/androidGatewayProvider.js';
 
 const providers = {
   [twilioProvider.id]: twilioProvider,
-  [mockProvider.id]: mockProvider
+  [mockProvider.id]: mockProvider,
+  [androidGatewayProvider.id]: androidGatewayProvider
 };
 
 export function listProviders() {
