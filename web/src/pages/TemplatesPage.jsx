@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api.js';
 
-const EMPTY_FORM = { id: null, name: '', content: '', channel: 'both', isDefault: false };
-const CHANNEL_LABELS = { whatsapp: 'WhatsApp', sms: 'SMS', both: 'WhatsApp e SMS' };
+const EMPTY_FORM = { id: null, name: '', content: '', subject: '', channel: 'any', isDefault: false };
+const CHANNEL_LABELS = { whatsapp: 'WhatsApp', sms: 'SMS', email: 'Email', any: 'Qualquer canal' };
 
 export default function TemplatesPage() {
   const [templates, setTemplates] = useState([]);
@@ -26,20 +26,17 @@ export default function TemplatesPage() {
     setError('');
     setSaving(true);
     try {
+      const payload = {
+        name: form.name,
+        content: form.content,
+        subject: form.subject,
+        channel: form.channel,
+        isDefault: form.isDefault,
+      };
       if (form.id) {
-        await api.updateTemplate(form.id, {
-          name: form.name,
-          content: form.content,
-          channel: form.channel,
-          isDefault: form.isDefault,
-        });
+        await api.updateTemplate(form.id, payload);
       } else {
-        await api.createTemplate({
-          name: form.name,
-          content: form.content,
-          channel: form.channel,
-          isDefault: form.isDefault,
-        });
+        await api.createTemplate(payload);
       }
       setForm(EMPTY_FORM);
       await load();
@@ -55,6 +52,8 @@ export default function TemplatesPage() {
     await api.deleteTemplate(id);
     load();
   }
+
+  const usesEmail = form.channel === 'email' || form.channel === 'any';
 
   return (
     <div>
@@ -87,12 +86,27 @@ export default function TemplatesPage() {
                 value={form.channel}
                 onChange={(e) => setForm((f) => ({ ...f, channel: e.target.value }))}
               >
-                <option value="both">WhatsApp e SMS</option>
+                <option value="any">Qualquer canal (WhatsApp, SMS ou Email)</option>
                 <option value="whatsapp">Somente WhatsApp</option>
                 <option value="sms">Somente SMS</option>
+                <option value="email">Somente Email</option>
               </select>
             </div>
           </div>
+
+          {usesEmail && (
+            <div className="field">
+              <label htmlFor="template-subject">Assunto do email</label>
+              <input
+                id="template-subject"
+                type="text"
+                value={form.subject}
+                onChange={(e) => setForm((f) => ({ ...f, subject: e.target.value }))}
+                placeholder="Ex: Olá {{nome}}, uma novidade pra você"
+              />
+              <p className="helper-text">Usado apenas quando a mensagem for enviada por email.</p>
+            </div>
+          )}
 
           <div className="field">
             <label htmlFor="template-content">Mensagem</label>
@@ -153,11 +167,11 @@ export default function TemplatesPage() {
               {templates.map((t) => (
                 <tr key={t.id}>
                   <td>{t.name}</td>
-                  <td>{CHANNEL_LABELS[t.channel]}</td>
+                  <td>{CHANNEL_LABELS[t.channel] ?? t.channel}</td>
                   <td style={{ maxWidth: 320, whiteSpace: 'pre-wrap' }}>{t.content}</td>
                   <td>{t.isDefault && <span className="badge badge-success">Padrão</span>}</td>
                   <td>
-                    <button className="btn btn-secondary btn-sm" onClick={() => setForm(t)}>Editar</button>{' '}
+                    <button className="btn btn-secondary btn-sm" onClick={() => setForm({ ...EMPTY_FORM, ...t })}>Editar</button>{' '}
                     <button className="btn btn-danger btn-sm" onClick={() => handleDelete(t.id)}>Remover</button>
                   </td>
                 </tr>

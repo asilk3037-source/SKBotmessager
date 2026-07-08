@@ -1,22 +1,23 @@
 # SKBotmessager
 
-Programa para disparo em massa de mensagens **SMS** e **WhatsApp** a partir de uma planilha de contatos —
-substitui o envio manual, um por um. Suba a planilha, escolha (ou crie) uma mensagem padrão, dispare para
-todo mundo de uma vez e acompanhe tudo pelo relatório.
+Programa para disparo em massa de mensagens **SMS**, **WhatsApp** e **Email** a partir de uma planilha de
+contatos — substitui o envio manual, um por um. Suba a planilha, escolha (ou crie) uma mensagem padrão,
+dispare para todo mundo de uma vez e acompanhe tudo pelo relatório.
 
 ## O que o programa faz
 
 - **Importar planilha**: sobe um `.xlsx` ou `.csv`, mostra uma prévia e deixa você indicar qual coluna é o
-  nome e qual é o telefone.
+  nome, qual é o telefone e/ou qual é o email (precisa de pelo menos uma das duas).
 - **Contatos**: lista tudo que já foi importado, com busca e organização por lote (cada planilha importada
   vira um lote).
 - **Mensagens padrão**: modelos de mensagem reutilizáveis com variáveis, ex: `Olá {{nome}}, tudo bem?`.
-  Qualquer coluna extra da planilha também vira variável (ex: `{{cidade}}`).
-- **Disparo em massa**: escolhe o lote, os contatos, o canal (WhatsApp ou SMS) e o template; mostra uma
-  prévia de como a mensagem fica para os primeiros contatos antes de confirmar o envio.
-- **Relatórios**: histórico completo de cada mensagem enviada (contato, canal, status, erro se houver) com
-  filtros e exportação em CSV.
-- **Configurações**: conectar o WhatsApp (via QR code) e configurar o provedor de SMS.
+  Qualquer coluna extra da planilha também vira variável (ex: `{{cidade}}`). Templates de email podem ter
+  um assunto próprio (também aceita variáveis).
+- **Disparo em massa**: escolhe o lote, os contatos, o canal (WhatsApp, SMS ou Email) e o template; mostra
+  uma prévia de como a mensagem fica para os primeiros contatos antes de confirmar o envio.
+- **Relatórios**: histórico completo de cada mensagem enviada (contato, destinatário, canal, status, erro se
+  houver) com filtros e exportação em CSV.
+- **Configurações**: conectar o WhatsApp (via QR code), configurar o provedor de SMS e a conta de email.
 
 ## Como funciona por baixo dos panos
 
@@ -31,7 +32,10 @@ todo mundo de uma vez e acompanhe tudo pelo relatório.
   gratuito ao criar conta) e um provedor **Simulado** (não envia nada de verdade, só para testar o fluxo
   completo sem gastar nada). Não existe gateway de SMS gratuito e confiável em volume; se você já usa outro
   provedor, dá para adicionar um novo arquivo em `server/src/services/sms-providers/` seguindo o mesmo
-  formato do `twilioProvider.js`.
+  formato do `twilioProvider.js`. Veja [docs/futuro-sms-via-celular.md](docs/futuro-sms-via-celular.md) para
+  a ideia (ainda não implementada) de enviar SMS pelo chip do seu próprio celular.
+- **Email**: usa sua conta do Gmail via SMTP com "senha de app" (gratuito, limite de uso diário do Gmail).
+  Gere a senha de app em `myaccount.google.com/apppasswords`.
 
 ## Como rodar
 
@@ -55,6 +59,7 @@ Abra `http://localhost:5173` no navegador.
    - Para WhatsApp: clique em "Conectar WhatsApp" e escaneie o QR code pelo celular (WhatsApp → Aparelhos
      conectados → Conectar um aparelho).
    - Para SMS: escolha "Simulado" para testar sem custo, ou configure suas credenciais da Twilio.
+   - Para Email: informe seu Gmail e uma senha de app (não é a senha normal da sua conta Google).
 4. Vá em **Disparo em massa**, selecione os contatos, o canal e o template, confira a prévia e dispare.
 5. Acompanhe tudo em **Relatórios**, com opção de exportar CSV.
 

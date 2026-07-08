@@ -9,6 +9,7 @@ export default function UploadPage() {
   const [preview, setPreview] = useState(null);
   const [nameColumn, setNameColumn] = useState('');
   const [phoneColumn, setPhoneColumn] = useState('');
+  const [emailColumn, setEmailColumn] = useState('');
   const [batchLabel, setBatchLabel] = useState('');
   const [dragOver, setDragOver] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -28,7 +29,8 @@ export default function UploadPage() {
       } else {
         setPreview(data);
         setNameColumn(data.suggestedNameColumn || data.columns[0] || '');
-        setPhoneColumn(data.suggestedPhoneColumn || data.columns[0] || '');
+        setPhoneColumn(data.suggestedPhoneColumn || '');
+        setEmailColumn(data.suggestedEmailColumn || '');
         setBatchLabel(data.fileName || '');
       }
     } catch (err) {
@@ -47,7 +49,8 @@ export default function UploadPage() {
         fileName: preview.fileName,
         rows: preview.rows,
         nameColumn,
-        phoneColumn,
+        phoneColumn: phoneColumn || undefined,
+        emailColumn: emailColumn || undefined,
         extraColumns: preview.columns,
         batchLabel,
       });
@@ -59,6 +62,8 @@ export default function UploadPage() {
       setLoading(false);
     }
   }
+
+  const canImport = nameColumn && (phoneColumn || emailColumn);
 
   return (
     <div>
@@ -103,23 +108,34 @@ export default function UploadPage() {
         <div className="card">
           <h3>Configurar importação</h3>
           <div className="field">
-            <label>Nome deste lote</label>
-            <input type="text" value={batchLabel} onChange={(e) => setBatchLabel(e.target.value)} />
+            <label htmlFor="batch-label">Nome deste lote</label>
+            <input id="batch-label" type="text" value={batchLabel} onChange={(e) => setBatchLabel(e.target.value)} />
           </div>
           <div className="row">
             <div className="field">
-              <label>Coluna com o nome do contato</label>
-              <select value={nameColumn} onChange={(e) => setNameColumn(e.target.value)}>
+              <label htmlFor="name-column">Coluna com o nome do contato</label>
+              <select id="name-column" value={nameColumn} onChange={(e) => setNameColumn(e.target.value)}>
                 {preview.columns.map((col) => <option key={col} value={col}>{col}</option>)}
               </select>
             </div>
             <div className="field">
-              <label>Coluna com o telefone</label>
-              <select value={phoneColumn} onChange={(e) => setPhoneColumn(e.target.value)}>
+              <label htmlFor="phone-column">Coluna com o telefone (WhatsApp/SMS)</label>
+              <select id="phone-column" value={phoneColumn} onChange={(e) => setPhoneColumn(e.target.value)}>
+                <option value="">Não usar</option>
+                {preview.columns.map((col) => <option key={col} value={col}>{col}</option>)}
+              </select>
+            </div>
+            <div className="field">
+              <label htmlFor="email-column">Coluna com o email</label>
+              <select id="email-column" value={emailColumn} onChange={(e) => setEmailColumn(e.target.value)}>
+                <option value="">Não usar</option>
                 {preview.columns.map((col) => <option key={col} value={col}>{col}</option>)}
               </select>
             </div>
           </div>
+          {!canImport && (
+            <p className="helper-text">Selecione o nome e ao menos uma coluna (telefone ou email).</p>
+          )}
 
           <p className="helper-text">
             {preview.rows.length} linha(s) encontradas. Pré-visualização das 5 primeiras:
@@ -143,7 +159,7 @@ export default function UploadPage() {
             <button className="btn btn-secondary" onClick={() => setPreview(null)} disabled={loading}>
               Cancelar
             </button>
-            <button className="btn" onClick={handleImport} disabled={loading || !nameColumn || !phoneColumn}>
+            <button className="btn" onClick={handleImport} disabled={loading || !canImport}>
               {loading ? 'Importando...' : `Importar ${preview.rows.length} contato(s)`}
             </button>
           </div>
@@ -154,7 +170,7 @@ export default function UploadPage() {
         <div className="card">
           <div className="alert alert-success">
             {result.importedCount} contato(s) importado(s) com sucesso.
-            {result.skippedCount > 0 && ` ${result.skippedCount} linha(s) ignorada(s) por telefone inválido.`}
+            {result.skippedCount > 0 && ` ${result.skippedCount} linha(s) ignorada(s) por telefone/email inválido ou vazio.`}
           </div>
           <div className="toolbar">
             <button className="btn btn-secondary" onClick={() => setResult(null)}>Importar outra planilha</button>

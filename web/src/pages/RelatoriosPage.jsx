@@ -7,6 +7,8 @@ const STATUS_BADGE = {
   pending: <span className="badge badge-warning">Pendente</span>,
 };
 
+const CHANNEL_LABELS = { whatsapp: 'WhatsApp', sms: 'SMS', email: 'Email' };
+
 export default function RelatoriosPage() {
   const [summary, setSummary] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -63,6 +65,7 @@ export default function RelatoriosPage() {
               <option value="">Todos os canais</option>
               <option value="whatsapp">WhatsApp</option>
               <option value="sms">SMS</option>
+              <option value="email">Email</option>
             </select>
             <select value={filters.status} onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value }))}>
               <option value="">Todos os status</option>
@@ -89,7 +92,7 @@ export default function RelatoriosPage() {
                 <tr>
                   <th>Data</th>
                   <th>Contato</th>
-                  <th>Telefone</th>
+                  <th>Destinatário</th>
                   <th>Canal</th>
                   <th>Status</th>
                   <th>Mensagem</th>
@@ -100,10 +103,13 @@ export default function RelatoriosPage() {
                   <tr key={m.id}>
                     <td>{new Date(m.createdAt).toLocaleString('pt-BR')}</td>
                     <td>{m.contactName}</td>
-                    <td>{m.phone}</td>
-                    <td>{m.channel === 'whatsapp' ? 'WhatsApp' : 'SMS'}</td>
+                    <td>{m.recipient || '—'}</td>
+                    <td>{CHANNEL_LABELS[m.channel] ?? m.channel}</td>
                     <td>{STATUS_BADGE[m.status] || m.status}{m.error && <div className="helper-text">{m.error}</div>}</td>
-                    <td style={{ maxWidth: 260, whiteSpace: 'pre-wrap' }}>{m.content}</td>
+                    <td style={{ maxWidth: 260, whiteSpace: 'pre-wrap' }}>
+                      {m.subject && <strong>{m.subject}<br /></strong>}
+                      {m.content}
+                    </td>
                   </tr>
                 ))}
               </tbody>

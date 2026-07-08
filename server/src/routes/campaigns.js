@@ -21,8 +21,8 @@ router.post('/', async (req, res) => {
   if (!name || !templateId || !channel || !Array.isArray(contactIds) || contactIds.length === 0) {
     return res.status(400).json({ error: 'name, templateId, channel e contactIds são obrigatórios.' });
   }
-  if (!['whatsapp', 'sms'].includes(channel)) {
-    return res.status(400).json({ error: 'Canal deve ser "whatsapp" ou "sms".' });
+  if (!['whatsapp', 'sms', 'email'].includes(channel)) {
+    return res.status(400).json({ error: 'Canal deve ser "whatsapp", "sms" ou "email".' });
   }
   const template = db.data.templates.find((t) => t.id === templateId);
   if (!template) {

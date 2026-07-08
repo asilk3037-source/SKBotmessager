@@ -3,6 +3,7 @@ import { parse as parseCsv } from 'csv-parse/sync';
 
 const PHONE_HEADER_HINTS = ['telefone', 'celular', 'phone', 'whatsapp', 'numero', 'número', 'fone', 'contato'];
 const NAME_HEADER_HINTS = ['nome', 'name', 'cliente'];
+const EMAIL_HEADER_HINTS = ['email', 'e-mail'];
 
 function normalizeHeader(header) {
   return String(header ?? '').trim().toLowerCase();
@@ -15,6 +16,13 @@ export function normalizePhone(raw) {
   const hasPlus = str.startsWith('+');
   const digits = str.replace(/\D/g, '');
   return hasPlus ? `+${digits}` : digits;
+}
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+export function normalizeEmail(raw) {
+  const str = String(raw ?? '').trim().toLowerCase();
+  return EMAIL_RE.test(str) ? str : '';
 }
 
 function isCsv(originalName, buffer) {
@@ -72,7 +80,14 @@ export async function parseSpreadsheet(buffer, originalName) {
     : await parseXlsx(buffer);
 
   if (rows.length === 0) {
-    return { fileName: originalName, columns: [], rows: [], suggestedNameColumn: null, suggestedPhoneColumn: null };
+    return {
+      fileName: originalName,
+      columns: [],
+      rows: [],
+      suggestedNameColumn: null,
+      suggestedPhoneColumn: null,
+      suggestedEmailColumn: null
+    };
   }
 
   const suggestedPhoneColumn = columns.find((col) =>
@@ -83,11 +98,16 @@ export async function parseSpreadsheet(buffer, originalName) {
     NAME_HEADER_HINTS.some((hint) => normalizeHeader(col).includes(hint))
   ) ?? null;
 
+  const suggestedEmailColumn = columns.find((col) =>
+    EMAIL_HEADER_HINTS.some((hint) => normalizeHeader(col).includes(hint))
+  ) ?? null;
+
   return {
     fileName: originalName,
     columns,
     rows,
     suggestedNameColumn,
-    suggestedPhoneColumn
+    suggestedPhoneColumn,
+    suggestedEmailColumn
   };
 }

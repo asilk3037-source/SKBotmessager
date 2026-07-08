@@ -33,7 +33,7 @@ router.get('/summary', (req, res) => {
 });
 
 function toCsv(rows) {
-  const headers = ['data', 'campanha', 'contato', 'telefone', 'canal', 'status', 'erro', 'mensagem'];
+  const headers = ['data', 'campanha', 'contato', 'destinatario', 'canal', 'status', 'erro', 'assunto', 'mensagem'];
   const escape = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
   const lines = [headers.join(',')];
 
@@ -44,10 +44,11 @@ function toCsv(rows) {
         row.createdAt,
         campaign?.name ?? '',
         row.contactName,
-        row.phone,
+        row.recipient,
         row.channel,
         row.status,
         row.error ?? '',
+        row.subject ?? '',
         row.content
       ]
         .map(escape)

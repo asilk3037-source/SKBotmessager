@@ -3,14 +3,23 @@ import db from '../db/index.js';
 import { renderTemplate } from './renderTemplate.js';
 import whatsappService from './whatsappService.js';
 import { sendSms } from './smsService.js';
+import { sendEmail } from './emailService.js';
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-async function sendOne(channel, contact, text) {
+function getRecipient(channel, contact) {
+  if (channel === 'whatsapp' || channel === 'sms') return contact.phone || '';
+  if (channel === 'email') return contact.email || '';
+  return '';
+}
+
+async function sendOne(channel, contact, text, subject) {
   if (channel === 'whatsapp') {
     await whatsappService.sendMessage(contact.phone, text);
   } else if (channel === 'sms') {
     await sendSms(contact.phone, text);
+  } else if (channel === 'email') {
+    await sendEmail(contact.email, subject, text);
   } else {
     throw new Error(`Canal inválido: ${channel}`);
   }
@@ -37,14 +46,18 @@ export async function runCampaign(campaignId) {
 
   for (const contact of contacts) {
     const text = renderTemplate(template.content, contact);
+    const subject = template.subject ? renderTemplate(template.subject, contact) : '';
+    const recipient = getRecipient(campaign.channel, contact);
+
     const message = {
       id: nanoid(),
       campaignId,
       contactId: contact.id,
       contactName: contact.name,
-      phone: contact.phone,
+      recipient,
       channel: campaign.channel,
       content: text,
+      subject,
       status: 'pending',
       error: null,
       createdAt: now(),
@@ -52,15 +65,23 @@ export async function runCampaign(campaignId) {
     };
     db.data.messages.push(message);
 
-    try {
-      await sendOne(campaign.channel, contact, text);
-      message.status = 'sent';
-      message.sentAt = now();
-      campaign.sentCount += 1;
-    } catch (err) {
+    if (!recipient) {
       message.status = 'failed';
-      message.error = err.message || String(err);
+      message.error = campaign.channel === 'email'
+        ? 'Contato sem email cadastrado.'
+        : 'Contato sem telefone cadastrado.';
       campaign.failedCount += 1;
+    } else {
+      try {
+        await sendOne(campaign.channel, contact, text, subject);
+        message.status = 'sent';
+        message.sentAt = now();
+        campaign.sentCount += 1;
+      } catch (err) {
+        message.status = 'failed';
+        message.error = err.message || String(err);
+        campaign.failedCount += 1;
+      }
     }
 
     campaign.processedCount += 1;

@@ -12,9 +12,10 @@ export default function ConfiguracoesPage() {
   const [waStatus, setWaStatus] = useState(null);
   const [smsProviders, setSmsProviders] = useState([]);
   const [smsSettings, setSmsSettings] = useState(null);
+  const [emailSettings, setEmailSettings] = useState(null);
   const [delayMs, setDelayMs] = useState(3000);
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [savingSection, setSavingSection] = useState('');
+  const [savedSection, setSavedSection] = useState('');
   const pollRef = useRef(null);
 
   async function loadWaStatus() {
@@ -26,6 +27,7 @@ export default function ConfiguracoesPage() {
     const data = await api.getSettings();
     setSmsProviders(data.smsProviders);
     setSmsSettings(data.settings.sms);
+    setEmailSettings(data.settings.email);
     setDelayMs(data.settings.delayBetweenMessagesMs);
   }
 
@@ -52,15 +54,14 @@ export default function ConfiguracoesPage() {
     setWaStatus(status);
   }
 
-  async function handleSaveSms(e) {
-    e.preventDefault();
-    setSaving(true);
-    setSaved(false);
+  async function saveSection(section, payload) {
+    setSavingSection(section);
+    setSavedSection('');
     try {
-      await api.updateSettings({ sms: smsSettings, delayBetweenMessagesMs: Number(delayMs) });
-      setSaved(true);
+      await api.updateSettings(payload);
+      setSavedSection(section);
     } finally {
-      setSaving(false);
+      setSavingSection('');
     }
   }
 
@@ -70,7 +71,7 @@ export default function ConfiguracoesPage() {
   return (
     <div>
       <h1 className="page-title">Configurações</h1>
-      <p className="page-subtitle">Conecte o WhatsApp, configure o provedor de SMS e o ritmo de envio.</p>
+      <p className="page-subtitle">Conecte o WhatsApp e configure os canais de SMS e email.</p>
 
       <div className="card">
         <h3>WhatsApp</h3>
@@ -103,7 +104,10 @@ export default function ConfiguracoesPage() {
       </div>
 
       {smsSettings && (
-        <form className="card" onSubmit={handleSaveSms}>
+        <form
+          className="card"
+          onSubmit={(e) => { e.preventDefault(); saveSection('sms', { sms: smsSettings }); }}
+        >
           <h3>SMS</h3>
           <div className="field">
             <label htmlFor="sms-provider">Provedor de SMS</label>
@@ -157,26 +161,91 @@ export default function ConfiguracoesPage() {
             </div>
           )}
 
-          <div className="field">
-            <label>Intervalo entre mensagens (milissegundos)</label>
-            <input
-              type="number"
-              min="500"
-              step="500"
-              value={delayMs}
-              onChange={(e) => setDelayMs(e.target.value)}
-            />
-            <p className="helper-text">Vale para WhatsApp e SMS. Intervalos maiores reduzem o risco de bloqueio.</p>
-          </div>
-
           <div className="toolbar">
-            {saved && <span className="helper-text">Configurações salvas.</span>}
-            <button type="submit" className="btn" disabled={saving}>
-              {saving ? 'Salvando...' : 'Salvar configurações'}
+            {savedSection === 'sms' && <span className="helper-text">Configurações salvas.</span>}
+            <button type="submit" className="btn" disabled={savingSection === 'sms'}>
+              {savingSection === 'sms' ? 'Salvando...' : 'Salvar SMS'}
             </button>
           </div>
         </form>
       )}
+
+      {emailSettings && (
+        <form
+          className="card"
+          onSubmit={(e) => { e.preventDefault(); saveSection('email', { email: emailSettings }); }}
+        >
+          <h3>Email</h3>
+          <p className="helper-text">
+            Envia usando sua própria conta do Gmail (grátis, até ~500 emails por dia). Você precisa gerar uma
+            "senha de app" em myaccount.google.com/apppasswords — não use a senha normal da sua conta Google.
+          </p>
+          <div className="row">
+            <div className="field">
+              <label htmlFor="email-user">Seu Gmail</label>
+              <input
+                id="email-user"
+                type="text"
+                placeholder="voce@gmail.com"
+                value={emailSettings.user || ''}
+                onChange={(e) => setEmailSettings((s) => ({ ...s, user: e.target.value }))}
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="email-app-password">Senha de app</label>
+              <input
+                id="email-app-password"
+                type="password"
+                placeholder="16 caracteres"
+                value={emailSettings.appPassword || ''}
+                onChange={(e) => setEmailSettings((s) => ({ ...s, appPassword: e.target.value }))}
+              />
+            </div>
+          </div>
+          <div className="field">
+            <label htmlFor="email-from-name">Nome de exibição (opcional)</label>
+            <input
+              id="email-from-name"
+              type="text"
+              placeholder="Ex: Sua Empresa"
+              value={emailSettings.fromName || ''}
+              onChange={(e) => setEmailSettings((s) => ({ ...s, fromName: e.target.value }))}
+            />
+          </div>
+
+          <div className="toolbar">
+            {savedSection === 'email' && <span className="helper-text">Configurações salvas.</span>}
+            <button type="submit" className="btn" disabled={savingSection === 'email'}>
+              {savingSection === 'email' ? 'Salvando...' : 'Salvar email'}
+            </button>
+          </div>
+        </form>
+      )}
+
+      <form
+        className="card"
+        onSubmit={(e) => { e.preventDefault(); saveSection('delay', { delayBetweenMessagesMs: Number(delayMs) }); }}
+      >
+        <h3>Ritmo de envio</h3>
+        <div className="field">
+          <label htmlFor="delay-ms">Intervalo entre mensagens (milissegundos)</label>
+          <input
+            id="delay-ms"
+            type="number"
+            min="500"
+            step="500"
+            value={delayMs}
+            onChange={(e) => setDelayMs(e.target.value)}
+          />
+          <p className="helper-text">Vale para WhatsApp, SMS e email. Intervalos maiores reduzem o risco de bloqueio.</p>
+        </div>
+        <div className="toolbar">
+          {savedSection === 'delay' && <span className="helper-text">Configurações salvas.</span>}
+          <button type="submit" className="btn" disabled={savingSection === 'delay'}>
+            {savingSection === 'delay' ? 'Salvando...' : 'Salvar ritmo de envio'}
+          </button>
+        </div>
+      </form>
     </div>
   );
 }

@@ -13,6 +13,12 @@ function renderPreview(content, contact) {
   });
 }
 
+function getRecipient(channel, contact) {
+  return channel === 'email' ? contact.email : contact.phone;
+}
+
+const CHANNEL_LABELS = { whatsapp: 'WhatsApp', sms: 'SMS', email: 'Email' };
+
 export default function DisparoPage() {
   const [batches, setBatches] = useState([]);
   const [templates, setTemplates] = useState([]);
@@ -41,7 +47,7 @@ export default function DisparoPage() {
   }, [selectedBatch]);
 
   const filteredTemplates = useMemo(
-    () => templates.filter((t) => t.channel === channel || t.channel === 'both'),
+    () => templates.filter((t) => t.channel === channel || t.channel === 'any'),
     [templates, channel]
   );
 
@@ -56,6 +62,7 @@ export default function DisparoPage() {
 
   const selectedTemplate = templates.find((t) => t.id === templateId);
   const selectedContacts = contacts.filter((c) => selectedIds.has(c.id));
+  const selectedWithoutRecipient = selectedContacts.filter((c) => !getRecipient(channel, c));
 
   function toggleContact(id) {
     setSelectedIds((prev) => {
@@ -170,15 +177,22 @@ export default function DisparoPage() {
           <div style={{ maxHeight: 260, overflowY: 'auto' }}>
             <table>
               <tbody>
-                {contacts.map((c) => (
-                  <tr key={c.id}>
-                    <td style={{ width: 30 }}>
-                      <input type="checkbox" checked={selectedIds.has(c.id)} onChange={() => toggleContact(c.id)} />
-                    </td>
-                    <td>{c.name}</td>
-                    <td>{c.phone}</td>
-                  </tr>
-                ))}
+                {contacts.map((c) => {
+                  const recipient = getRecipient(channel, c);
+                  return (
+                    <tr key={c.id}>
+                      <td style={{ width: 30 }}>
+                        <input type="checkbox" checked={selectedIds.has(c.id)} onChange={() => toggleContact(c.id)} />
+                      </td>
+                      <td>{c.name}</td>
+                      <td>
+                        {recipient || (
+                          <span className="badge badge-warning">Sem {channel === 'email' ? 'email' : 'telefone'}</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -194,6 +208,7 @@ export default function DisparoPage() {
               <select id="disparo-channel" value={channel} onChange={(e) => setChannel(e.target.value)}>
                 <option value="whatsapp">WhatsApp</option>
                 <option value="sms">SMS</option>
+                <option value="email">Email</option>
               </select>
             </div>
             <div className="field">
@@ -218,19 +233,30 @@ export default function DisparoPage() {
         <div className="card">
           <h3>4. Pré-visualização</h3>
           <p className="helper-text">Exemplo de como a mensagem chegará para {selectedContacts.length} contato(s) selecionado(s):</p>
-          {selectedContacts.slice(0, 3).map((c) => (
+          {selectedContacts.filter((c) => getRecipient(channel, c)).slice(0, 3).map((c) => (
             <div key={c.id} className="alert alert-info" style={{ whiteSpace: 'pre-wrap' }}>
-              <strong>{c.name} ({c.phone}):</strong><br />
+              <strong>{c.name} ({getRecipient(channel, c)}):</strong>
+              {selectedTemplate.channel !== 'sms' && selectedTemplate.subject && channel === 'email' && (
+                <><br /><em>Assunto: {renderPreview(selectedTemplate.subject, c)}</em></>
+              )}
+              <br />
               {renderPreview(selectedTemplate.content, c)}
             </div>
           ))}
+
+          {selectedWithoutRecipient.length > 0 && (
+            <div className="alert alert-error">
+              {selectedWithoutRecipient.length} contato(s) selecionado(s) sem {channel === 'email' ? 'email' : 'telefone'} cadastrado
+              — serão marcados como falha no relatório e não recebem a mensagem.
+            </div>
+          )}
 
           <div className="toolbar">
             <span className="helper-text">
               O envio será feito um por um, com intervalo entre mensagens (configurável em Configurações).
             </span>
             <button className="btn" onClick={handleStart} disabled={starting}>
-              {starting ? 'Iniciando...' : `Disparar para ${selectedContacts.length} contato(s)`}
+              {starting ? 'Iniciando...' : `Disparar para ${selectedContacts.length} contato(s) por ${CHANNEL_LABELS[channel]}`}
             </button>
           </div>
         </div>

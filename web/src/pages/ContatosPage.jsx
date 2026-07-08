@@ -109,7 +109,7 @@ export default function ContatosPage() {
                 </select>
                 <input
                   type="search"
-                  placeholder="Buscar por nome ou telefone..."
+                  placeholder="Buscar por nome, telefone ou email..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
@@ -124,6 +124,7 @@ export default function ContatosPage() {
                   <tr>
                     <th>Nome</th>
                     <th>Telefone</th>
+                    <th>Email</th>
                     <th>Dados extras</th>
                     <th></th>
                   </tr>
@@ -132,7 +133,8 @@ export default function ContatosPage() {
                   {contacts.map((c) => (
                     <tr key={c.id}>
                       <td>{c.name}</td>
-                      <td>{c.phone}</td>
+                      <td>{c.phone || '—'}</td>
+                      <td>{c.email || '—'}</td>
                       <td>
                         {Object.entries(c.extras || {}).map(([k, v]) => `${k}: ${v}`).join(' · ')}
                       </td>

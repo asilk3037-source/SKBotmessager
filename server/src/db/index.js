@@ -18,6 +18,11 @@ const defaultData = {
       authToken: '',
       fromNumber: ''
     },
+    email: {
+      user: '',
+      appPassword: '',
+      fromName: ''
+    },
     delayBetweenMessagesMs: 3000
   }
 };
@@ -32,6 +37,7 @@ db.data.campaigns ??= [];
 db.data.messages ??= [];
 db.data.settings ??= defaultData.settings;
 db.data.settings.sms ??= defaultData.settings.sms;
+db.data.settings.email ??= defaultData.settings.email;
 db.data.settings.delayBetweenMessagesMs ??= defaultData.settings.delayBetweenMessagesMs;
 await db.write();
 

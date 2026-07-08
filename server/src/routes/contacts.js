@@ -2,7 +2,7 @@ import { Router } from 'express';
 import multer from 'multer';
 import { nanoid } from 'nanoid';
 import db from '../db/index.js';
-import { parseSpreadsheet, normalizePhone } from '../services/spreadsheetParser.js';
+import { parseSpreadsheet, normalizePhone, normalizeEmail } from '../services/spreadsheetParser.js';
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
@@ -23,13 +23,13 @@ router.post('/preview', upload.single('file'), async (req, res) => {
 
 // Step 2: confirm the import with column mapping chosen by the user
 router.post('/import', async (req, res) => {
-  const { fileName, rows, nameColumn, phoneColumn, extraColumns = [], batchLabel } = req.body;
+  const { fileName, rows, nameColumn, phoneColumn, emailColumn, extraColumns = [], batchLabel } = req.body;
 
   if (!Array.isArray(rows) || rows.length === 0) {
     return res.status(400).json({ error: 'Nenhuma linha para importar.' });
   }
-  if (!nameColumn || !phoneColumn) {
-    return res.status(400).json({ error: 'Informe as colunas de nome e telefone.' });
+  if (!nameColumn || (!phoneColumn && !emailColumn)) {
+    return res.status(400).json({ error: 'Informe a coluna de nome e ao menos uma de telefone ou email.' });
   }
 
   const batchId = nanoid();
@@ -39,17 +39,21 @@ router.post('/import', async (req, res) => {
   const skipped = [];
 
   for (const row of rows) {
-    const phone = normalizePhone(row[phoneColumn]);
+    const phone = phoneColumn ? normalizePhone(row[phoneColumn]) : '';
+    const email = emailColumn ? normalizeEmail(row[emailColumn]) : '';
     const name = String(row[nameColumn] ?? '').trim();
 
-    if (!phone || phone.replace('+', '').length < 8) {
-      skipped.push({ row, reason: 'Telefone inválido ou vazio' });
+    const validPhone = phone && phone.replace('+', '').length >= 8;
+    const validEmail = Boolean(email);
+
+    if (!validPhone && !validEmail) {
+      skipped.push({ row, reason: 'Telefone e email inválidos ou vazios' });
       continue;
     }
 
     const extras = {};
     for (const col of extraColumns) {
-      if (col !== nameColumn && col !== phoneColumn) {
+      if (col !== nameColumn && col !== phoneColumn && col !== emailColumn) {
         extras[col] = row[col];
       }
     }
@@ -58,7 +62,8 @@ router.post('/import', async (req, res) => {
       id: nanoid(),
       batchId,
       name: name || '(sem nome)',
-      phone,
+      phone: validPhone ? phone : '',
+      email: validEmail ? email : '',
       extras,
       createdAt: now
     });
@@ -108,7 +113,10 @@ router.get('/', (req, res) => {
   if (search) {
     const term = String(search).toLowerCase();
     contacts = contacts.filter(
-      (c) => c.name.toLowerCase().includes(term) || c.phone.includes(term)
+      (c) =>
+        c.name.toLowerCase().includes(term) ||
+        c.phone.includes(term) ||
+        (c.email ?? '').includes(term)
     );
   }
 

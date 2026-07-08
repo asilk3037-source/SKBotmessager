@@ -12,10 +12,13 @@ router.get('/', (req, res) => {
 });
 
 router.put('/', async (req, res) => {
-  const { sms, delayBetweenMessagesMs } = req.body;
+  const { sms, email, delayBetweenMessagesMs } = req.body;
 
   if (sms) {
     db.data.settings.sms = { ...db.data.settings.sms, ...sms };
+  }
+  if (email) {
+    db.data.settings.email = { ...db.data.settings.email, ...email };
   }
   if (typeof delayBetweenMessagesMs === 'number' && delayBetweenMessagesMs >= 500) {
     db.data.settings.delayBetweenMessagesMs = delayBetweenMessagesMs;

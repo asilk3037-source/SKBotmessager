@@ -3,14 +3,14 @@ import { nanoid } from 'nanoid';
 import db from '../db/index.js';
 
 const router = Router();
-const VALID_CHANNELS = ['whatsapp', 'sms', 'both'];
+const VALID_CHANNELS = ['whatsapp', 'sms', 'email', 'any'];
 
 router.get('/', (req, res) => {
   res.json([...db.data.templates].sort((a, b) => b.createdAt.localeCompare(a.createdAt)));
 });
 
 router.post('/', async (req, res) => {
-  const { name, content, channel = 'both', isDefault = false } = req.body;
+  const { name, content, subject = '', channel = 'any', isDefault = false } = req.body;
 
   if (!name || !content) {
     return res.status(400).json({ error: 'Nome e conteúdo são obrigatórios.' });
@@ -23,7 +23,7 @@ router.post('/', async (req, res) => {
 
   if (isDefault) {
     db.data.templates.forEach((t) => {
-      if (t.channel === channel || channel === 'both') t.isDefault = false;
+      if (t.channel === channel || channel === 'any') t.isDefault = false;
     });
   }
 
@@ -31,6 +31,7 @@ router.post('/', async (req, res) => {
     id: nanoid(),
     name,
     content,
+    subject,
     channel,
     isDefault: Boolean(isDefault),
     createdAt: now,
@@ -45,17 +46,18 @@ router.put('/:id', async (req, res) => {
   const template = db.data.templates.find((t) => t.id === req.params.id);
   if (!template) return res.status(404).json({ error: 'Template não encontrado.' });
 
-  const { name, content, channel, isDefault } = req.body;
+  const { name, content, subject, channel, isDefault } = req.body;
   if (channel && !VALID_CHANNELS.includes(channel)) {
     return res.status(400).json({ error: 'Canal inválido.' });
   }
 
   if (name !== undefined) template.name = name;
   if (content !== undefined) template.content = content;
+  if (subject !== undefined) template.subject = subject;
   if (channel !== undefined) template.channel = channel;
   if (isDefault) {
     db.data.templates.forEach((t) => {
-      if (t.id !== template.id && (t.channel === template.channel || template.channel === 'both')) {
+      if (t.id !== template.id && (t.channel === template.channel || template.channel === 'any')) {
         t.isDefault = false;
       }
     });
