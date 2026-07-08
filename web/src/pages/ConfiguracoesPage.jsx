@@ -89,6 +89,10 @@ export default function ConfiguracoesPage() {
           </div>
         )}
 
+        {waStatus?.error && (
+          <div className="alert alert-error">Falha ao conectar: {waStatus.error}</div>
+        )}
+
         <div className="toolbar">
           {(!waStatus || waStatus.status === 'disconnected') && (
             <button className="btn" onClick={handleConnect}>Conectar WhatsApp</button>

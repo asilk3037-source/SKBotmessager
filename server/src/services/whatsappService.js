@@ -15,6 +15,7 @@ class WhatsAppService extends EventEmitter {
     this.status = 'disconnected'; // disconnected | qr | connecting | connected
     this.qrDataUrl = null;
     this.connectedNumber = null;
+    this.error = null;
   }
 
   init() {
@@ -30,12 +31,14 @@ class WhatsAppService extends EventEmitter {
 
     this.client.on('qr', async (qr) => {
       this.status = 'qr';
+      this.error = null;
       this.qrDataUrl = await qrcode.toDataURL(qr);
       this.emit('status', this.getState());
     });
 
     this.client.on('ready', () => {
       this.status = 'connected';
+      this.error = null;
       this.qrDataUrl = null;
       this.connectedNumber = this.client.info?.wid?.user ?? null;
       this.emit('status', this.getState());
@@ -54,8 +57,19 @@ class WhatsAppService extends EventEmitter {
       this.client = null;
     });
 
-    this.client.initialize();
     this.status = 'connecting';
+    this.error = null;
+
+    // client.initialize() rejects instead of emitting an event when the browser fails to
+    // launch/navigate (bad network, missing Chromium, etc.) - left uncaught, that crashes
+    // the whole Node process, taking down every other feature with it.
+    this.client.initialize().catch((err) => {
+      this.status = 'disconnected';
+      this.error = err.message || String(err);
+      this.qrDataUrl = null;
+      this.client = null;
+      this.emit('status', this.getState());
+    });
   }
 
   async logout() {
@@ -66,11 +80,17 @@ class WhatsAppService extends EventEmitter {
     this.status = 'disconnected';
     this.qrDataUrl = null;
     this.connectedNumber = null;
+    this.error = null;
     this.emit('status', this.getState());
   }
 
   getState() {
-    return { status: this.status, qrDataUrl: this.qrDataUrl, connectedNumber: this.connectedNumber };
+    return {
+      status: this.status,
+      qrDataUrl: this.qrDataUrl,
+      connectedNumber: this.connectedNumber,
+      error: this.error
+    };
   }
 
   toWhatsAppId(phone) {
