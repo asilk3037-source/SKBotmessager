@@ -128,16 +128,18 @@ export default function ConfiguracoesPage() {
             <>
               <div className="row">
                 <div className="field">
-                  <label>Account SID</label>
+                  <label htmlFor="twilio-account-sid">Account SID</label>
                   <input
+                    id="twilio-account-sid"
                     type="text"
                     value={smsSettings.accountSid || ''}
                     onChange={(e) => setSmsSettings((s) => ({ ...s, accountSid: e.target.value }))}
                   />
                 </div>
                 <div className="field">
-                  <label>Auth Token</label>
+                  <label htmlFor="twilio-auth-token">Auth Token</label>
                   <input
+                    id="twilio-auth-token"
                     type="password"
                     value={smsSettings.authToken || ''}
                     onChange={(e) => setSmsSettings((s) => ({ ...s, authToken: e.target.value }))}
@@ -145,8 +147,9 @@ export default function ConfiguracoesPage() {
                 </div>
               </div>
               <div className="field">
-                <label>Número de origem (formato E.164, ex: +15017122661)</label>
+                <label htmlFor="twilio-from-number">Número de origem (formato E.164, ex: +15017122661)</label>
                 <input
+                  id="twilio-from-number"
                   type="text"
                   value={smsSettings.fromNumber || ''}
                   onChange={(e) => setSmsSettings((s) => ({ ...s, fromNumber: e.target.value }))}
