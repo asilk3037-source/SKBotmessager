@@ -16,7 +16,10 @@ const defaultData = {
       provider: 'twilio',
       accountSid: '',
       authToken: '',
-      fromNumber: ''
+      fromNumber: '',
+      baseUrl: 'https://api.sms-gate.app/3rdparty/v1',
+      login: '',
+      password: ''
     },
     email: {
       user: '',
@@ -37,6 +40,9 @@ db.data.campaigns ??= [];
 db.data.messages ??= [];
 db.data.settings ??= defaultData.settings;
 db.data.settings.sms ??= defaultData.settings.sms;
+db.data.settings.sms.baseUrl ??= defaultData.settings.sms.baseUrl;
+db.data.settings.sms.login ??= defaultData.settings.sms.login;
+db.data.settings.sms.password ??= defaultData.settings.sms.password;
 db.data.settings.email ??= defaultData.settings.email;
 db.data.settings.delayBetweenMessagesMs ??= defaultData.settings.delayBetweenMessagesMs;
 await db.write();

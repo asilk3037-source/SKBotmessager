@@ -165,6 +165,54 @@ export default function ConfiguracoesPage() {
             </div>
           )}
 
+          {provider?.id === 'androidGateway' && (
+            <>
+              <div className="alert alert-info">
+                Envia SMS de verdade pelo chip do seu próprio celular, usando o app grátis{' '}
+                <strong>SMS Gateway for Android</strong> (sms-gate.app). Instale o app no celular com o chip
+                que você quer usar, abra-o e copie a URL, o usuário e a senha mostrados na tela dele pra cá.
+              </div>
+              <div className="field">
+                <label htmlFor="android-base-url">URL do serviço</label>
+                <input
+                  id="android-base-url"
+                  type="text"
+                  placeholder="http://192.168.0.10:8080 ou https://api.sms-gate.app/3rdparty/v1"
+                  value={smsSettings.baseUrl || ''}
+                  onChange={(e) => setSmsSettings((s) => ({ ...s, baseUrl: e.target.value }))}
+                />
+                <p className="helper-text">
+                  Endereço local do celular na sua rede Wi-Fi (mais rápido) ou o relay em nuvem gratuito do
+                  próprio app, se o celular não estiver na mesma rede.
+                </p>
+              </div>
+              <div className="row">
+                <div className="field">
+                  <label htmlFor="android-login">Usuário</label>
+                  <input
+                    id="android-login"
+                    type="text"
+                    value={smsSettings.login || ''}
+                    onChange={(e) => setSmsSettings((s) => ({ ...s, login: e.target.value }))}
+                  />
+                </div>
+                <div className="field">
+                  <label htmlFor="android-password">Senha</label>
+                  <input
+                    id="android-password"
+                    type="password"
+                    value={smsSettings.password || ''}
+                    onChange={(e) => setSmsSettings((s) => ({ ...s, password: e.target.value }))}
+                  />
+                </div>
+              </div>
+              <p className="helper-text">
+                O celular precisa ficar ligado, com o app aberto e conectado à internet enquanto os disparos
+                acontecem.
+              </p>
+            </>
+          )}
+
           <div className="toolbar">
             {savedSection === 'sms' && <span className="helper-text">Configurações salvas.</span>}
             <button type="submit" className="btn" disabled={savingSection === 'sms'}>
