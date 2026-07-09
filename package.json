@@ -3,13 +3,19 @@
   "version": "1.0.0",
   "private": true,
   "description": "Disparo em massa de SMS e WhatsApp a partir de uma planilha de contatos",
+  "main": "electron/main.js",
   "scripts": {
     "install-all": "npm install --prefix server && npm install --prefix web",
     "dev": "concurrently -n server,web -c green,cyan \"npm run dev --prefix server\" \"npm run dev --prefix web\"",
     "build": "npm run build --prefix web",
-    "start": "npm run build && npm start --prefix server"
+    "start": "npm run build && npm start --prefix server",
+    "electron:dev": "concurrently -n server,web,electron -c green,cyan,magenta \"npm run dev --prefix server\" \"npm run dev --prefix web\" \"wait-on http://localhost:5173 && cross-env ELECTRON_START_URL=http://localhost:5173 electron electron/main.js\"",
+    "electron:start": "npm run build --prefix web && electron electron/main.js"
   },
   "devDependencies": {
-    "concurrently": "^9.1.0"
+    "concurrently": "^9.1.0",
+    "cross-env": "^7.0.3",
+    "electron": "^33.2.1",
+    "wait-on": "^8.0.1"
   }
 }
