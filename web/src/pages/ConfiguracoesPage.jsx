@@ -16,19 +16,28 @@ export default function ConfiguracoesPage() {
   const [delayMs, setDelayMs] = useState(3000);
   const [savingSection, setSavingSection] = useState('');
   const [savedSection, setSavedSection] = useState('');
+  const [error, setError] = useState('');
   const pollRef = useRef(null);
 
   async function loadWaStatus() {
-    const status = await api.getWhatsappStatus();
-    setWaStatus(status);
+    try {
+      const status = await api.getWhatsappStatus();
+      setWaStatus(status);
+    } catch (err) {
+      setError(err.message);
+    }
   }
 
   async function loadSettings() {
-    const data = await api.getSettings();
-    setSmsProviders(data.smsProviders);
-    setSmsSettings(data.settings.sms);
-    setEmailSettings(data.settings.email);
-    setDelayMs(data.settings.delayBetweenMessagesMs);
+    try {
+      const data = await api.getSettings();
+      setSmsProviders(data.smsProviders);
+      setSmsSettings(data.settings.sms);
+      setEmailSettings(data.settings.email);
+      setDelayMs(data.settings.delayBetweenMessagesMs);
+    } catch (err) {
+      setError(err.message);
+    }
   }
 
   useEffect(() => {
@@ -44,22 +53,33 @@ export default function ConfiguracoesPage() {
   }, [waStatus?.status]);
 
   async function handleConnect() {
-    const status = await api.connectWhatsapp();
-    setWaStatus(status);
+    try {
+      const status = await api.connectWhatsapp();
+      setWaStatus(status);
+    } catch (err) {
+      setError(err.message);
+    }
   }
 
   async function handleLogout() {
     if (!confirm('Desconectar o WhatsApp?')) return;
-    const status = await api.logoutWhatsapp();
-    setWaStatus(status);
+    try {
+      const status = await api.logoutWhatsapp();
+      setWaStatus(status);
+    } catch (err) {
+      setError(err.message);
+    }
   }
 
   async function saveSection(section, payload) {
     setSavingSection(section);
     setSavedSection('');
+    setError('');
     try {
       await api.updateSettings(payload);
       setSavedSection(section);
+    } catch (err) {
+      setError(err.message);
     } finally {
       setSavingSection('');
     }
@@ -72,6 +92,8 @@ export default function ConfiguracoesPage() {
     <div>
       <h1 className="page-title">Configurações</h1>
       <p className="page-subtitle">Conecte o WhatsApp e configure os canais de SMS e email.</p>
+
+      {error && <div className="alert alert-error">{error}</div>}
 
       <div className="card">
         <h3>WhatsApp</h3>

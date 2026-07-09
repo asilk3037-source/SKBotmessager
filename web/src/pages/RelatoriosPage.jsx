@@ -14,16 +14,23 @@ export default function RelatoriosPage() {
   const [messages, setMessages] = useState([]);
   const [filters, setFilters] = useState({ channel: '', status: '', campaignId: '' });
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [summaryData, messagesData] = await Promise.all([
-      api.reportSummary(),
-      api.listMessages(Object.fromEntries(Object.entries(filters).filter(([, v]) => v))),
-    ]);
-    setSummary(summaryData);
-    setMessages(messagesData.messages);
-    setLoading(false);
+    setError('');
+    try {
+      const [summaryData, messagesData] = await Promise.all([
+        api.reportSummary(),
+        api.listMessages(Object.fromEntries(Object.entries(filters).filter(([, v]) => v))),
+      ]);
+      setSummary(summaryData);
+      setMessages(messagesData.messages);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   }, [filters]);
 
   useEffect(() => { load(); }, [load]);
@@ -32,6 +39,8 @@ export default function RelatoriosPage() {
     <div>
       <h1 className="page-title">Relatórios</h1>
       <p className="page-subtitle">Histórico completo de mensagens enviadas, com status e detalhes.</p>
+
+      {error && <div className="alert alert-error">{error}</div>}
 
       {summary && (
         <div className="stat-grid">

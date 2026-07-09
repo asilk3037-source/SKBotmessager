@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import db from '../db/index.js';
 import { startCampaign } from '../services/campaignRunner.js';
+import { asyncHandler } from '../utils/asyncHandler.js';
 
 const router = Router();
 
@@ -15,7 +16,7 @@ router.get('/:id', (req, res) => {
   res.json(campaign);
 });
 
-router.post('/', async (req, res) => {
+router.post('/', asyncHandler(async (req, res) => {
   const { name, templateId, channel, contactIds } = req.body;
 
   if (!name || !templateId || !channel || !Array.isArray(contactIds) || contactIds.length === 0) {
@@ -31,6 +32,6 @@ router.post('/', async (req, res) => {
 
   const campaign = await startCampaign({ name, templateId, channel, contactIds });
   res.status(201).json(campaign);
-});
+}));
 
 export default router;

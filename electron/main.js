@@ -33,7 +33,10 @@ function startBackend() {
   serverProcess = spawn(process.execPath, ['src/index.js'], {
     cwd: path.join(__dirname, '..', 'server'),
     stdio: 'inherit',
-    env: process.env,
+    // process.execPath here is the Electron binary itself. Without this,
+    // it would try to boot a second full Electron/GUI instance instead of
+    // just running the server script as plain Node.
+    env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
   });
 }
 

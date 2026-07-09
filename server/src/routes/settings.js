@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import db from '../db/index.js';
 import { listProviders } from '../services/smsService.js';
+import { asyncHandler } from '../utils/asyncHandler.js';
 
 const router = Router();
 
@@ -32,8 +33,22 @@ router.get('/', (req, res) => {
   });
 });
 
-router.put('/', async (req, res) => {
+router.put('/', asyncHandler(async (req, res) => {
   const { sms, email, delayBetweenMessagesMs } = req.body;
+
+  if (sms?.baseUrl) {
+    // The Android SMS gateway is meant to be pointed at a phone on the local
+    // network (http://) or the vendor's cloud relay (https://) — only block
+    // other/malformed protocols, since that's the actual SSRF-relevant risk.
+    try {
+      const parsed = new URL(sms.baseUrl);
+      if (!['http:', 'https:'].includes(parsed.protocol)) {
+        return res.status(400).json({ error: 'baseUrl deve ser um endereço http:// ou https://.' });
+      }
+    } catch {
+      return res.status(400).json({ error: 'baseUrl inválida.' });
+    }
+  }
 
   if (sms) {
     // A blank secret field means "leave it as is" (the client never receives
@@ -56,6 +71,6 @@ router.put('/', async (req, res) => {
 
   await db.write();
   res.json(maskSettings(db.data.settings));
-});
+}));
 
 export default router;

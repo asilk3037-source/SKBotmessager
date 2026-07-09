@@ -3,6 +3,7 @@ import multer from 'multer';
 import { nanoid } from 'nanoid';
 import db from '../db/index.js';
 import { parseSpreadsheet, normalizePhone, normalizeEmail } from '../services/spreadsheetParser.js';
+import { asyncHandler } from '../utils/asyncHandler.js';
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
@@ -22,7 +23,7 @@ router.post('/preview', upload.single('file'), async (req, res) => {
 });
 
 // Step 2: confirm the import with column mapping chosen by the user
-router.post('/import', async (req, res) => {
+router.post('/import', asyncHandler(async (req, res) => {
   const { fileName, rows, nameColumn, phoneColumn, emailColumn, extraColumns = [], batchLabel } = req.body;
 
   if (!Array.isArray(rows) || rows.length === 0) {
@@ -87,21 +88,21 @@ router.post('/import', async (req, res) => {
     skippedCount: skipped.length,
     skipped: skipped.slice(0, 50)
   });
-});
+}));
 
 router.get('/batches', (req, res) => {
   const batches = [...db.data.batches].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   res.json(batches);
 });
 
-router.delete('/batches/:batchId', async (req, res) => {
+router.delete('/batches/:batchId', asyncHandler(async (req, res) => {
   const { batchId } = req.params;
   const before = db.data.contacts.length;
   db.data.contacts = db.data.contacts.filter((c) => c.batchId !== batchId);
   db.data.batches = db.data.batches.filter((b) => b.id !== batchId);
   await db.write();
   res.json({ removedContacts: before - db.data.contacts.length });
-});
+}));
 
 router.get('/', (req, res) => {
   const { batchId, search } = req.query;
@@ -123,7 +124,7 @@ router.get('/', (req, res) => {
   res.json({ total: contacts.length, contacts });
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', asyncHandler(async (req, res) => {
   const before = db.data.contacts.length;
   db.data.contacts = db.data.contacts.filter((c) => c.id !== req.params.id);
   await db.write();
@@ -131,6 +132,6 @@ router.delete('/:id', async (req, res) => {
     return res.status(404).json({ error: 'Contato não encontrado.' });
   }
   res.status(204).end();
-});
+}));
 
 export default router;

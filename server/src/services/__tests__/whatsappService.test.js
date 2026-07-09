@@ -11,6 +11,7 @@ vi.mock('whatsapp-web.js', () => {
       this.opts = opts;
       this.info = { wid: { user: '5511999999999' } };
       this.logout = vi.fn().mockResolvedValue(undefined);
+      this.destroy = vi.fn().mockResolvedValue(undefined);
       this.getNumberId = vi.fn();
       this.sendMessage = vi.fn().mockResolvedValue(undefined);
       this._listeners = {};
@@ -105,17 +106,20 @@ describe('whatsappService.init', () => {
   it('resets to disconnected on a "disconnected" event', () => {
     state.nextInitialize = () => new Promise(() => {});
     whatsappService.init();
-    lastClient().emit('ready');
-    lastClient().emit('disconnected');
+    const client = lastClient();
+    client.emit('ready');
+    client.emit('disconnected');
 
     expect(whatsappService.status).toBe('disconnected');
     expect(whatsappService.connectedNumber).toBeNull();
     expect(whatsappService.client).toBeNull();
+    expect(client.destroy).toHaveBeenCalled();
   });
 
   it('catches a rejected initialize() instead of letting it crash the process', async () => {
     state.nextInitialize = () => Promise.reject(new Error('net::ERR_TUNNEL_CONNECTION_FAILED'));
     whatsappService.init();
+    const client = lastClient();
 
     await new Promise((resolve) => setImmediate(resolve));
     await new Promise((resolve) => setImmediate(resolve));
@@ -123,6 +127,7 @@ describe('whatsappService.init', () => {
     expect(whatsappService.status).toBe('disconnected');
     expect(whatsappService.error).toBe('net::ERR_TUNNEL_CONNECTION_FAILED');
     expect(whatsappService.client).toBeNull();
+    expect(client.destroy).toHaveBeenCalled();
   });
 });
 
@@ -135,6 +140,7 @@ describe('whatsappService.logout', () => {
     await whatsappService.logout();
 
     expect(client.logout).toHaveBeenCalled();
+    expect(client.destroy).toHaveBeenCalled();
     expect(whatsappService.status).toBe('disconnected');
     expect(whatsappService.client).toBeNull();
   });

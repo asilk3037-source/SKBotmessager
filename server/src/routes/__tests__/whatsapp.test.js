@@ -9,6 +9,7 @@ vi.mock('whatsapp-web.js', () => {
       this.opts = opts;
       this.info = { wid: { user: '5511999999999' } };
       this.logout = vi.fn().mockResolvedValue(undefined);
+      this.destroy = vi.fn().mockResolvedValue(undefined);
       this._listeners = {};
       state.instances.push(this);
     }

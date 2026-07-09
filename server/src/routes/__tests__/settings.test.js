@@ -89,6 +89,32 @@ describe('PUT /api/settings', () => {
     expect(db.data.settings.sms.authToken).toBe('existing-token');
   });
 
+  it('rejects a baseUrl with a non-http(s) protocol', async () => {
+    const res = await request(app)
+      .put('/api/settings')
+      .send({ sms: { baseUrl: 'file:///etc/passwd' } });
+
+    expect(res.status).toBe(400);
+    expect(db.data.settings.sms.baseUrl).toBe('https://api.sms-gate.app/3rdparty/v1');
+  });
+
+  it('rejects a malformed baseUrl', async () => {
+    const res = await request(app)
+      .put('/api/settings')
+      .send({ sms: { baseUrl: 'not a url' } });
+
+    expect(res.status).toBe(400);
+  });
+
+  it('accepts an http:// baseUrl for a phone on the local network', async () => {
+    const res = await request(app)
+      .put('/api/settings')
+      .send({ sms: { baseUrl: 'http://192.168.0.10:8080' } });
+
+    expect(res.status).toBe(200);
+    expect(db.data.settings.sms.baseUrl).toBe('http://192.168.0.10:8080');
+  });
+
   it('overwrites the stored secret when a new value is submitted', async () => {
     db.data.settings.sms.authToken = 'existing-token';
     await db.write();

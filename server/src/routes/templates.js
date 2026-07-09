@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { nanoid } from 'nanoid';
 import db from '../db/index.js';
+import { asyncHandler } from '../utils/asyncHandler.js';
 
 const router = Router();
 const VALID_CHANNELS = ['whatsapp', 'sms', 'email', 'any'];
@@ -9,7 +10,7 @@ router.get('/', (req, res) => {
   res.json([...db.data.templates].sort((a, b) => b.createdAt.localeCompare(a.createdAt)));
 });
 
-router.post('/', async (req, res) => {
+router.post('/', asyncHandler(async (req, res) => {
   const { name, content, subject = '', channel = 'any', isDefault = false } = req.body;
 
   if (!name || !content) {
@@ -40,9 +41,9 @@ router.post('/', async (req, res) => {
   db.data.templates.push(template);
   await db.write();
   res.status(201).json(template);
-});
+}));
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', asyncHandler(async (req, res) => {
   const template = db.data.templates.find((t) => t.id === req.params.id);
   if (!template) return res.status(404).json({ error: 'Template não encontrado.' });
 
@@ -69,9 +70,9 @@ router.put('/:id', async (req, res) => {
 
   await db.write();
   res.json(template);
-});
+}));
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', asyncHandler(async (req, res) => {
   const before = db.data.templates.length;
   db.data.templates = db.data.templates.filter((t) => t.id !== req.params.id);
   await db.write();
@@ -79,6 +80,6 @@ router.delete('/:id', async (req, res) => {
     return res.status(404).json({ error: 'Template não encontrado.' });
   }
   res.status(204).end();
-});
+}));
 
 export default router;

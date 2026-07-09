@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import whatsappService from '../services/whatsappService.js';
+import { asyncHandler } from '../utils/asyncHandler.js';
 
 const router = Router();
 
@@ -12,9 +13,9 @@ router.post('/connect', (req, res) => {
   res.json(whatsappService.getState());
 });
 
-router.post('/logout', async (req, res) => {
+router.post('/logout', asyncHandler(async (req, res) => {
   await whatsappService.logout();
   res.json(whatsappService.getState());
-});
+}));
 
 export default router;

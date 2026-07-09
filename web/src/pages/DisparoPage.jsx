@@ -40,10 +40,18 @@ export default function DisparoPage() {
 
   useEffect(() => {
     if (!selectedBatch) { setContacts([]); return; }
+    // Guards against a slower response for a previously selected batch
+    // resolving after a newer one and overwriting the contact list with
+    // the wrong batch's data.
+    let cancelled = false;
     api.listContacts({ batchId: selectedBatch }).then((data) => {
+      if (cancelled) return;
       setContacts(data.contacts);
       setSelectedIds(new Set(data.contacts.map((c) => c.id)));
+    }).catch((err) => {
+      if (!cancelled) setError(err.message);
     });
+    return () => { cancelled = true; };
   }, [selectedBatch]);
 
   const filteredTemplates = useMemo(

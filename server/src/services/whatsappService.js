@@ -54,7 +54,7 @@ class WhatsAppService extends EventEmitter {
       this.qrDataUrl = null;
       this.connectedNumber = null;
       this.emit('status', this.getState());
-      this.client = null;
+      this.destroyClient();
     });
 
     this.status = 'connecting';
@@ -67,15 +67,29 @@ class WhatsAppService extends EventEmitter {
       this.status = 'disconnected';
       this.error = err.message || String(err);
       this.qrDataUrl = null;
-      this.client = null;
       this.emit('status', this.getState());
+      this.destroyClient();
     });
+  }
+
+  // whatsapp-web.js keeps a full Puppeteer/Chromium process behind `Client`.
+  // Dropping the reference without calling destroy() leaves that process
+  // running, orphaned, on every disconnect/logout/init-failure.
+  destroyClient() {
+    const client = this.client;
+    this.client = null;
+    if (!client || typeof client.destroy !== 'function') return;
+    try {
+      Promise.resolve(client.destroy()).catch(() => {});
+    } catch {
+      // destroy() itself threw synchronously (e.g. browser already gone) - nothing to do.
+    }
   }
 
   async logout() {
     if (this.client) {
       await this.client.logout().catch(() => {});
-      this.client = null;
+      this.destroyClient();
     }
     this.status = 'disconnected';
     this.qrDataUrl = null;
