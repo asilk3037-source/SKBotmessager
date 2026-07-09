@@ -11,8 +11,12 @@ export default function TemplatesPage() {
   const [error, setError] = useState('');
 
   async function load() {
-    const data = await api.listTemplates();
-    setTemplates(data);
+    try {
+      const data = await api.listTemplates();
+      setTemplates(data);
+    } catch (err) {
+      setError(err.message);
+    }
   }
 
   useEffect(() => { load(); }, []);
@@ -49,8 +53,12 @@ export default function TemplatesPage() {
 
   async function handleDelete(id) {
     if (!confirm('Remover este template?')) return;
-    await api.deleteTemplate(id);
-    load();
+    try {
+      await api.deleteTemplate(id);
+      load();
+    } catch (err) {
+      setError(err.message);
+    }
   }
 
   const usesEmail = form.channel === 'email' || form.channel === 'any';
@@ -119,8 +127,8 @@ export default function TemplatesPage() {
             />
             <div className="helper-text">
               Clique para inserir variável:{' '}
-              <span className="tag" onClick={() => insertVariable('nome')}>{'{{nome}}'}</span>{' '}
-              <span className="tag" onClick={() => insertVariable('telefone')}>{'{{telefone}}'}</span>{' '}
+              <button type="button" className="tag" onClick={() => insertVariable('nome')}>{'{{nome}}'}</button>{' '}
+              <button type="button" className="tag" onClick={() => insertVariable('telefone')}>{'{{telefone}}'}</button>{' '}
               Você também pode usar qualquer nome de coluna extra da sua planilha, ex: <code>{'{{cidade}}'}</code>.
             </div>
           </div>

@@ -7,6 +7,11 @@ import { sendEmail } from './emailService.js';
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+// Re-serializing the whole db.json after every single message is a real I/O
+// bottleneck for large campaigns; flush periodically instead, plus always at
+// the end so progress polling never drifts far from what's on disk.
+const WRITE_BATCH_SIZE = 20;
+
 function getRecipient(channel, contact) {
   if (channel === 'whatsapp' || channel === 'sms') return contact.phone || '';
   if (channel === 'email') return contact.email || '';
@@ -44,7 +49,9 @@ export async function runCampaign(campaignId) {
   const delayMs = db.data.settings.delayBetweenMessagesMs ?? 3000;
   const now = () => new Date().toISOString();
 
-  for (const contact of contacts) {
+  for (let i = 0; i < contacts.length; i++) {
+    const contact = contacts[i];
+    const isLast = i === contacts.length - 1;
     const text = renderTemplate(template.content, contact);
     const subject = template.subject ? renderTemplate(template.subject, contact) : '';
     const recipient = getRecipient(campaign.channel, contact);
@@ -85,9 +92,12 @@ export async function runCampaign(campaignId) {
     }
 
     campaign.processedCount += 1;
-    await db.write();
 
-    if (contact !== contacts[contacts.length - 1]) {
+    if (isLast || (i + 1) % WRITE_BATCH_SIZE === 0) {
+      await db.write();
+    }
+
+    if (!isLast) {
       await sleep(delayMs);
     }
   }

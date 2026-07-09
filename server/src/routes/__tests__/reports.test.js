@@ -140,4 +140,27 @@ describe('GET /api/reports/export.csv', () => {
 
     expect(dataLine).toBe('"2025-01-03T00:00:00.000Z","","Pedro","111","sms","sent","","","oi"');
   });
+
+  it('neutralizes values that start with a formula-trigger character', async () => {
+    db.data.messages = [
+      {
+        id: 'm4',
+        campaignId: 'camp-1',
+        contactName: '=HYPERLINK("https://evil.example","click")',
+        recipient: '111',
+        channel: 'sms',
+        status: 'sent',
+        error: null,
+        subject: null,
+        content: '+1+1',
+        createdAt: '2025-01-04T00:00:00.000Z'
+      }
+    ];
+
+    const res = await request(app).get('/api/reports/export.csv');
+    const [, dataLine] = res.text.slice(1).trim().split('\n');
+
+    expect(dataLine).toContain('"\'=HYPERLINK(""https://evil.example"",""click"")"');
+    expect(dataLine).toContain('"\'+1+1"');
+  });
 });

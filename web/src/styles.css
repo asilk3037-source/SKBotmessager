@@ -392,6 +392,7 @@ tr:hover td { background: #fafbfa; }
 .tag {
   display: inline-block;
   background: #eef0f3;
+  border: none;
   border-radius: 6px;
   padding: 2px 8px;
   font-size: 12px;

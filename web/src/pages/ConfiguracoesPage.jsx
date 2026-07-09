@@ -134,7 +134,7 @@ export default function ConfiguracoesPage() {
           className="card"
           onSubmit={(e) => {
             e.preventDefault();
-            const { authTokenSet, passwordSet, ...sms } = smsSettings;
+            const { authTokenSet: _authTokenSet, passwordSet: _passwordSet, ...sms } = smsSettings;
             saveSection('sms', { sms });
           }}
         >
@@ -258,7 +258,7 @@ export default function ConfiguracoesPage() {
           className="card"
           onSubmit={(e) => {
             e.preventDefault();
-            const { appPasswordSet, ...email } = emailSettings;
+            const { appPasswordSet: _appPasswordSet, ...email } = emailSettings;
             saveSection('email', { email });
           }}
         >

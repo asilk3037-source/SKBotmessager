@@ -289,6 +289,66 @@ describe('runCampaign', () => {
 
     setTimeoutSpy.mockRestore();
   });
+
+  it('still waits between messages when the same contact id is selected twice (no reference-equality skip)', async () => {
+    const c1 = addContact({ id: 'c1', phone: '111' });
+    const template = addTemplate();
+    sendSmsMock.mockResolvedValue(undefined);
+    db.data.settings.delayBetweenMessagesMs = 5;
+
+    const setTimeoutSpy = vi.spyOn(global, 'setTimeout');
+
+    db.data.campaigns.push({
+      id: 'camp-1',
+      templateId: template.id,
+      channel: 'sms',
+      contactIds: [c1.id, c1.id, c1.id],
+      totalCount: 3,
+      processedCount: 0,
+      sentCount: 0,
+      failedCount: 0,
+      status: 'running'
+    });
+
+    await runCampaign('camp-1');
+
+    // Same underlying contact object resolved 3 times via .find() - the loop
+    // must still treat the first two as "not last" and sleep, based on index,
+    // not on object identity.
+    const delayCalls = setTimeoutSpy.mock.calls.filter((call) => call[1] === 5);
+    expect(delayCalls).toHaveLength(2);
+    expect(db.data.messages).toHaveLength(3);
+
+    setTimeoutSpy.mockRestore();
+  });
+
+  it('batches db.write() instead of writing once per message', async () => {
+    const c1 = addContact({ id: 'c1', phone: '111' });
+    const c2 = addContact({ id: 'c2', phone: '222' });
+    const template = addTemplate();
+    sendSmsMock.mockResolvedValue(undefined);
+
+    db.data.campaigns.push({
+      id: 'camp-1',
+      templateId: template.id,
+      channel: 'sms',
+      contactIds: [c1.id, c2.id],
+      totalCount: 2,
+      processedCount: 0,
+      sentCount: 0,
+      failedCount: 0,
+      status: 'running'
+    });
+
+    const writeSpy = vi.spyOn(db, 'write');
+    await runCampaign('camp-1');
+
+    // One flush for the last message in the loop, one for the final
+    // "completed" status - not one per message sent.
+    expect(writeSpy).toHaveBeenCalledTimes(2);
+
+    writeSpy.mockRestore();
+  });
 });
 
 describe('startCampaign', () => {

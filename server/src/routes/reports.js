@@ -34,11 +34,19 @@ router.get('/summary', (req, res) => {
 
 function toCsv(rows) {
   const headers = ['data', 'campanha', 'contato', 'destinatario', 'canal', 'status', 'erro', 'assunto', 'mensagem'];
-  const escape = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  // Prefix values that would otherwise open as a formula in Excel/Sheets
+  // (=, +, -, @) so importing user-controlled data (contact names, template
+  // content) can't execute anything when the export is opened.
+  const escape = (v) => {
+    let s = String(v ?? '');
+    if (/^[=+\-@]/.test(s)) s = `'${s}`;
+    return `"${s.replace(/"/g, '""')}"`;
+  };
+  const campaignsById = new Map(db.data.campaigns.map((c) => [c.id, c]));
   const lines = [headers.join(',')];
 
   for (const row of rows) {
-    const campaign = db.data.campaigns.find((c) => c.id === row.campaignId);
+    const campaign = campaignsById.get(row.campaignId);
     lines.push(
       [
         row.createdAt,

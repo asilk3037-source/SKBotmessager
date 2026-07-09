@@ -1,6 +1,11 @@
 import ExcelJS from 'exceljs';
 import { parse as parseCsv } from 'csv-parse/sync';
 
+// Parsing runs synchronously on the event loop; an unbounded row count would
+// block every other request (including the WhatsApp client) for as long as
+// the parse takes.
+const MAX_ROWS = 50000;
+
 const PHONE_HEADER_HINTS = ['telefone', 'celular', 'phone', 'whatsapp', 'numero', 'número', 'fone', 'contato'];
 const NAME_HEADER_HINTS = ['nome', 'name', 'cliente'];
 const EMAIL_HEADER_HINTS = ['email', 'e-mail'];
@@ -78,6 +83,10 @@ export async function parseSpreadsheet(buffer, originalName) {
   const { columns, rows } = isCsv(originalName, buffer)
     ? parseCsvBuffer(buffer)
     : await parseXlsx(buffer);
+
+  if (rows.length > MAX_ROWS) {
+    throw new Error(`Planilha excede o limite de ${MAX_ROWS.toLocaleString('pt-BR')} linhas.`);
+  }
 
   if (rows.length === 0) {
     return {

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api.js';
 
@@ -10,13 +10,22 @@ export default function ContatosPage() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const requestIdRef = useRef(0);
 
   const loadBatches = useCallback(async () => {
-    const data = await api.listBatches();
-    setBatches(data);
+    try {
+      const data = await api.listBatches();
+      setBatches(data);
+    } catch (err) {
+      setError(err.message);
+    }
   }, []);
 
   const loadContacts = useCallback(async () => {
+    // Tags each call with an id so a slower, older request (e.g. from a
+    // previous keystroke) can't overwrite the list with stale results once a
+    // newer one has already resolved.
+    const requestId = ++requestIdRef.current;
     setLoading(true);
     setError('');
     try {
@@ -24,12 +33,14 @@ export default function ContatosPage() {
       if (selectedBatch) params.batchId = selectedBatch;
       if (search) params.search = search;
       const data = await api.listContacts(params);
+      if (requestId !== requestIdRef.current) return;
       setContacts(data.contacts);
       setTotal(data.total);
     } catch (err) {
+      if (requestId !== requestIdRef.current) return;
       setError(err.message);
     } finally {
-      setLoading(false);
+      if (requestId === requestIdRef.current) setLoading(false);
     }
   }, [selectedBatch, search]);
 
@@ -41,16 +52,24 @@ export default function ContatosPage() {
 
   async function handleDeleteContact(id) {
     if (!confirm('Remover este contato?')) return;
-    await api.deleteContact(id);
-    loadContacts();
+    try {
+      await api.deleteContact(id);
+      loadContacts();
+    } catch (err) {
+      setError(err.message);
+    }
   }
 
   async function handleDeleteBatch(batchId) {
     if (!confirm('Remover este lote e todos os contatos importados nele?')) return;
-    await api.deleteBatch(batchId);
-    if (selectedBatch === batchId) setSelectedBatch('');
-    loadBatches();
-    loadContacts();
+    try {
+      await api.deleteBatch(batchId);
+      if (selectedBatch === batchId) setSelectedBatch('');
+      loadBatches();
+      loadContacts();
+    } catch (err) {
+      setError(err.message);
+    }
   }
 
   return (

@@ -34,8 +34,8 @@ export default function DisparoPage() {
   const pollRef = useRef(null);
 
   useEffect(() => {
-    api.listBatches().then(setBatches);
-    api.listTemplates().then(setTemplates);
+    api.listBatches().then(setBatches).catch((err) => setError(err.message));
+    api.listTemplates().then(setTemplates).catch((err) => setError(err.message));
   }, []);
 
   useEffect(() => {
@@ -111,9 +111,13 @@ export default function DisparoPage() {
       return;
     }
     pollRef.current = setInterval(async () => {
-      const updated = await api.getCampaign(campaign.id);
-      setCampaign(updated);
-      if (updated.status !== 'running') clearInterval(pollRef.current);
+      try {
+        const updated = await api.getCampaign(campaign.id);
+        setCampaign(updated);
+        if (updated.status !== 'running') clearInterval(pollRef.current);
+      } catch (err) {
+        setError(err.message);
+      }
     }, 1500);
     return () => clearInterval(pollRef.current);
   }, [campaign?.id, campaign?.status]);
@@ -123,6 +127,7 @@ export default function DisparoPage() {
     return (
       <div>
         <h1 className="page-title">Disparo em andamento</h1>
+        {error && <div className="alert alert-error">{error}</div>}
         <div className="card">
           <h3>{campaign.name}</h3>
           <div className="progress-bar" style={{ marginBottom: 10 }}>

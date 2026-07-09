@@ -92,6 +92,12 @@ describe('parseSpreadsheet - CSV', () => {
     const result = await parseSpreadsheet(Buffer.from(csv, 'utf8'), undefined);
     expect(result.rows).toHaveLength(1);
   });
+
+  it('rejects a spreadsheet with more rows than the configured limit', async () => {
+    const rows = Array.from({ length: 50001 }, (_, i) => `Joao ${i},1198888${String(i).padStart(4, '0')}`);
+    const csv = `Nome,Telefone\n${rows.join('\n')}\n`;
+    await expect(parseSpreadsheet(Buffer.from(csv, 'utf8'), 'c.csv')).rejects.toThrow(/excede o limite/i);
+  });
 });
 
 describe('parseSpreadsheet - XLSX', () => {
