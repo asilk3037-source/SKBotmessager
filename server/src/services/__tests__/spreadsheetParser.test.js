@@ -93,6 +93,11 @@ describe('parseSpreadsheet - CSV', () => {
     expect(result.rows).toHaveLength(1);
   });
 
+  it('rejects a legacy binary .xls file with a clear error instead of parsing it as garbled CSV', async () => {
+    const buffer = Buffer.from([0xd0, 0xcf, 0x11, 0xe0, 0, 0, 0, 0]);
+    await expect(parseSpreadsheet(buffer, 'planilha.xls')).rejects.toThrow(/\.xls antigo não suportado/i);
+  });
+
   it('rejects a spreadsheet with more rows than the configured limit', async () => {
     const rows = Array.from({ length: 50001 }, (_, i) => `Joao ${i},1198888${String(i).padStart(4, '0')}`);
     const csv = `Nome,Telefone\n${rows.join('\n')}\n`;

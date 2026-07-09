@@ -9,6 +9,7 @@
     "dev": "concurrently -n server,web -c green,cyan \"npm run dev --prefix server\" \"npm run dev --prefix web\"",
     "build": "npm run build --prefix web",
     "start": "npm run build && npm start --prefix server",
+    "test": "npm test --prefix server && npm test --prefix web",
     "electron:dev": "concurrently -n server,web,electron -c green,cyan,magenta \"npm run dev --prefix server\" \"npm run dev --prefix web\" \"wait-on http://localhost:5173 && cross-env ELECTRON_START_URL=http://localhost:5173 electron electron/main.js\"",
     "electron:start": "npm run build --prefix web && electron electron/main.js"
   },

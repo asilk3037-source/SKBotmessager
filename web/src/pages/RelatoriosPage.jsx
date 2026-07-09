@@ -1,13 +1,12 @@
 import { useEffect, useState, useCallback } from 'react';
 import { api } from '../api.js';
+import { CHANNEL_LABELS } from '../constants.js';
 
 const STATUS_BADGE = {
   sent: <span className="badge badge-success">Enviada</span>,
   failed: <span className="badge badge-danger">Falhou</span>,
   pending: <span className="badge badge-warning">Pendente</span>,
 };
-
-const CHANNEL_LABELS = { whatsapp: 'WhatsApp', sms: 'SMS', email: 'Email' };
 
 export default function RelatoriosPage() {
   const [summary, setSummary] = useState(null);
@@ -66,17 +65,17 @@ export default function RelatoriosPage() {
       <div className="card">
         <div className="toolbar">
           <div className="row" style={{ maxWidth: 520 }}>
-            <select value={filters.campaignId} onChange={(e) => setFilters((f) => ({ ...f, campaignId: e.target.value }))}>
+            <select aria-label="Filtrar por campanha" value={filters.campaignId} onChange={(e) => setFilters((f) => ({ ...f, campaignId: e.target.value }))}>
               <option value="">Todas as campanhas</option>
               {summary?.campaigns.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
-            <select value={filters.channel} onChange={(e) => setFilters((f) => ({ ...f, channel: e.target.value }))}>
+            <select aria-label="Filtrar por canal" value={filters.channel} onChange={(e) => setFilters((f) => ({ ...f, channel: e.target.value }))}>
               <option value="">Todos os canais</option>
               <option value="whatsapp">WhatsApp</option>
               <option value="sms">SMS</option>
               <option value="email">Email</option>
             </select>
-            <select value={filters.status} onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value }))}>
+            <select aria-label="Filtrar por status" value={filters.status} onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value }))}>
               <option value="">Todos os status</option>
               <option value="sent">Enviada</option>
               <option value="failed">Falhou</option>

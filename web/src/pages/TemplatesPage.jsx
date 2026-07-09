@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api.js';
+import { CHANNEL_LABELS } from '../constants.js';
 
 const EMPTY_FORM = { id: null, name: '', content: '', subject: '', channel: 'any', isDefault: false };
-const CHANNEL_LABELS = { whatsapp: 'WhatsApp', sms: 'SMS', email: 'Email', any: 'Qualquer canal' };
 
 export default function TemplatesPage() {
   const [templates, setTemplates] = useState([]);
@@ -168,7 +168,7 @@ export default function TemplatesPage() {
                 <th>Canal</th>
                 <th>Mensagem</th>
                 <th>Padrão</th>
-                <th></th>
+                <th aria-label="Ações"></th>
               </tr>
             </thead>
             <tbody>

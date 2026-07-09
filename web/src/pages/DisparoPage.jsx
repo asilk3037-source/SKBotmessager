@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api.js';
+import { CHANNEL_LABELS } from '../constants.js';
 
 function renderPreview(content, contact) {
   return content.replace(/\{\{\s*([\w.]+)\s*\}\}/g, (match, rawKey) => {
@@ -16,8 +17,6 @@ function renderPreview(content, contact) {
 function getRecipient(channel, contact) {
   return channel === 'email' ? contact.email : contact.phone;
 }
-
-const CHANNEL_LABELS = { whatsapp: 'WhatsApp', sms: 'SMS', email: 'Email' };
 
 export default function DisparoPage() {
   const [batches, setBatches] = useState([]);
@@ -195,7 +194,12 @@ export default function DisparoPage() {
                   return (
                     <tr key={c.id}>
                       <td style={{ width: 30 }}>
-                        <input type="checkbox" checked={selectedIds.has(c.id)} onChange={() => toggleContact(c.id)} />
+                        <input
+                          type="checkbox"
+                          aria-label={`Selecionar ${c.name}`}
+                          checked={selectedIds.has(c.id)}
+                          onChange={() => toggleContact(c.id)}
+                        />
                       </td>
                       <td>{c.name}</td>
                       <td>

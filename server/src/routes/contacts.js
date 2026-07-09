@@ -6,6 +6,7 @@ import { parseSpreadsheet, normalizePhone, normalizeEmail } from '../services/sp
 import { asyncHandler } from '../utils/asyncHandler.js';
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
+const UNSAFE_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 
 const router = Router();
 
@@ -54,6 +55,7 @@ router.post('/import', asyncHandler(async (req, res) => {
 
     const extras = {};
     for (const col of extraColumns) {
+      if (UNSAFE_KEYS.has(col)) continue;
       if (col !== nameColumn && col !== phoneColumn && col !== emailColumn) {
         extras[col] = row[col];
       }

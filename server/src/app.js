@@ -1,5 +1,7 @@
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -15,6 +17,11 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export function createApp() {
   const app = express();
 
+  // CSP is left off: this app is loaded from a local Electron/dev-server
+  // origin, not served publicly, and the default directives would fight
+  // things like the base64 WhatsApp QR code image and inline styles.
+  app.use(helmet({ contentSecurityPolicy: false }));
+
   const allowedOrigins = new Set(['http://localhost:5173', 'http://127.0.0.1:5173']);
   app.use(cors({
     origin(origin, callback) {
@@ -26,6 +33,12 @@ export function createApp() {
     },
   }));
   app.use(express.json({ limit: '15mb' }));
+  app.use('/api', rateLimit({
+    windowMs: 60 * 1000,
+    limit: 300,
+    standardHeaders: true,
+    legacyHeaders: false,
+  }));
 
   app.use('/api/contacts', contactsRouter);
   app.use('/api/templates', templatesRouter);

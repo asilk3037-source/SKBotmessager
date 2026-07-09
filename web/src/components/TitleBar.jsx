@@ -6,7 +6,7 @@ export default function TitleBar() {
 
   useEffect(() => {
     if (!electronAPI) return undefined;
-    electronAPI.isMaximized().then(setIsMaximized);
+    electronAPI.isMaximized().then(setIsMaximized).catch(() => {});
     return electronAPI.onMaximizedChange(setIsMaximized);
   }, [electronAPI]);
 

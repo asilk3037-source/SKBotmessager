@@ -2,15 +2,15 @@ import pkg from 'whatsapp-web.js';
 import qrcode from 'qrcode';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { EventEmitter } from 'node:events';
 
 const { Client, LocalAuth } = pkg;
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const AUTH_DIR = path.join(__dirname, '..', '..', 'data', 'wwebjs-auth');
 
-class WhatsAppService extends EventEmitter {
+// Status is exposed by polling GET /api/whatsapp/status - nothing subscribes
+// to change events, so this isn't an EventEmitter.
+class WhatsAppService {
   constructor() {
-    super();
     this.client = null;
     this.status = 'disconnected'; // disconnected | qr | connecting | connected
     this.qrDataUrl = null;
@@ -33,7 +33,6 @@ class WhatsAppService extends EventEmitter {
       this.status = 'qr';
       this.error = null;
       this.qrDataUrl = await qrcode.toDataURL(qr);
-      this.emit('status', this.getState());
     });
 
     this.client.on('ready', () => {
@@ -41,19 +40,16 @@ class WhatsAppService extends EventEmitter {
       this.error = null;
       this.qrDataUrl = null;
       this.connectedNumber = this.client.info?.wid?.user ?? null;
-      this.emit('status', this.getState());
     });
 
     this.client.on('authenticated', () => {
       this.status = 'connecting';
-      this.emit('status', this.getState());
     });
 
     this.client.on('disconnected', () => {
       this.status = 'disconnected';
       this.qrDataUrl = null;
       this.connectedNumber = null;
-      this.emit('status', this.getState());
       this.destroyClient();
     });
 
@@ -67,7 +63,6 @@ class WhatsAppService extends EventEmitter {
       this.status = 'disconnected';
       this.error = err.message || String(err);
       this.qrDataUrl = null;
-      this.emit('status', this.getState());
       this.destroyClient();
     });
   }
@@ -95,7 +90,6 @@ class WhatsAppService extends EventEmitter {
     this.qrDataUrl = null;
     this.connectedNumber = null;
     this.error = null;
-    this.emit('status', this.getState());
   }
 
   getState() {

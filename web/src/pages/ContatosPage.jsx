@@ -94,7 +94,7 @@ export default function ContatosPage() {
                   <th>Importados</th>
                   <th>Ignorados</th>
                   <th>Data</th>
-                  <th></th>
+                  <th aria-label="Ações"></th>
                 </tr>
               </thead>
               <tbody>
@@ -122,11 +122,12 @@ export default function ContatosPage() {
             <div className="toolbar">
               <h3 style={{ margin: 0 }}>Todos os contatos ({total})</h3>
               <div className="row" style={{ maxWidth: 480 }}>
-                <select value={selectedBatch} onChange={(e) => setSelectedBatch(e.target.value)}>
+                <select aria-label="Filtrar por lote" value={selectedBatch} onChange={(e) => setSelectedBatch(e.target.value)}>
                   <option value="">Todos os lotes</option>
                   {batches.map((b) => <option key={b.id} value={b.id}>{b.label}</option>)}
                 </select>
                 <input
+                  aria-label="Buscar contatos"
                   type="search"
                   placeholder="Buscar por nome, telefone ou email..."
                   value={search}
@@ -145,7 +146,7 @@ export default function ContatosPage() {
                     <th>Telefone</th>
                     <th>Email</th>
                     <th>Dados extras</th>
-                    <th></th>
+                    <th aria-label="Ações"></th>
                   </tr>
                 </thead>
                 <tbody>

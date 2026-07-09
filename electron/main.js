@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('node:path');
 const { spawn } = require('node:child_process');
 const http = require('node:http');
@@ -94,6 +94,10 @@ app.whenReady().then(async () => {
   });
 }).catch((err) => {
   console.error('startup failed', err);
+  // console.error alone is invisible in a packaged app with no terminal
+  // attached - show a real dialog so the user knows why nothing opened.
+  dialog.showErrorBox('SKBotmessager não conseguiu iniciar', String(err.message || err));
+  app.quit();
 });
 
 app.on('window-all-closed', () => {

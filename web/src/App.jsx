@@ -54,6 +54,7 @@ export default function App() {
             <Route path="/disparo" element={<DisparoPage />} />
             <Route path="/relatorios" element={<RelatoriosPage />} />
             <Route path="/configuracoes" element={<ConfiguracoesPage />} />
+            <Route path="*" element={<Navigate to="/upload" replace />} />
           </Routes>
         </main>
       </div>

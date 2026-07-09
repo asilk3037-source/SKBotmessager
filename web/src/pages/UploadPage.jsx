@@ -12,6 +12,7 @@ export default function UploadPage() {
   const [emailColumn, setEmailColumn] = useState('');
   const [batchLabel, setBatchLabel] = useState('');
   const [dragOver, setDragOver] = useState(false);
+  const [multiFileWarning, setMultiFileWarning] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [result, setResult] = useState(null);
@@ -73,17 +74,23 @@ export default function UploadPage() {
       </p>
 
       {error && <div className="alert alert-error">{error}</div>}
+      {multiFileWarning && (
+        <div className="alert alert-info">Apenas um arquivo por vez é suportado. Foi usado o primeiro.</div>
+      )}
 
       {!preview && (
         <div className="card">
-          <div
+          <button
+            type="button"
             className={`dropzone${dragOver ? ' dragover' : ''}`}
+            aria-label="Escolher arquivo de planilha"
             onClick={() => fileInputRef.current?.click()}
             onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
             onDragLeave={() => setDragOver(false)}
             onDrop={(e) => {
               e.preventDefault();
               setDragOver(false);
+              setMultiFileWarning(e.dataTransfer.files?.length > 1);
               handleFile(e.dataTransfer.files?.[0]);
             }}
           >
@@ -93,7 +100,7 @@ export default function UploadPage() {
                 <div className="helper-text">Formatos aceitos: .xlsx, .csv</div>
               </>
             )}
-          </div>
+          </button>
           <input
             ref={fileInputRef}
             type="file"

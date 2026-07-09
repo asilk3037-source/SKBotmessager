@@ -30,8 +30,13 @@ export function normalizeEmail(raw) {
   return EMAIL_RE.test(str) ? str : '';
 }
 
+const OLE2_MAGIC = [0xd0, 0xcf, 0x11, 0xe0];
+
 function isCsv(originalName, buffer) {
   if (originalName?.toLowerCase().endsWith('.csv')) return true;
+  if (OLE2_MAGIC.every((b, i) => buffer[i] === b)) {
+    throw new Error('Formato .xls antigo não suportado. Converta para .xlsx ou .csv.');
+  }
   // xlsx files are zip archives and start with "PK"; treat anything else as text/csv
   return !(buffer[0] === 0x50 && buffer[1] === 0x4b);
 }

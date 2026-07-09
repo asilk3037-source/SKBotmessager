@@ -302,6 +302,10 @@ tr:hover td { background: #fafbfa; }
 }
 
 .dropzone {
+  display: block;
+  width: 100%;
+  background: transparent;
+  font: inherit;
   border: 2px dashed var(--border);
   border-radius: var(--radius);
   padding: 42px;
