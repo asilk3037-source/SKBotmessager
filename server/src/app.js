@@ -23,11 +23,16 @@ export function createApp() {
   app.use(helmet({ contentSecurityPolicy: false }));
 
   const allowedOrigins = new Set(['http://localhost:5173', 'http://127.0.0.1:5173']);
-  app.use(cors({
+  // Scoped to /api only: this server also serves the built SPA itself
+  // (below), and browsers always attach an Origin header to
+  // `<script type="module">` fetches even for same-origin requests - a
+  // global CORS check here would 500 the app's own JS/CSS when it's loaded
+  // directly from this server (e.g. the packaged Electron build hitting
+  // http://localhost:3001), since that origin was never meant to need one.
+  app.use('/api', cors({
     origin(origin, callback) {
-      // No Origin header (same-origin navigation, curl, the Electron window loading
-      // this same server, or server-to-server calls) is always allowed; only
-      // cross-origin browser requests are restricted to the known dev server.
+      // No Origin header (curl, server-to-server calls) is always allowed;
+      // only cross-origin browser requests are restricted to the known dev server.
       if (!origin || allowedOrigins.has(origin)) return callback(null, true);
       callback(new Error('Not allowed by CORS'));
     },

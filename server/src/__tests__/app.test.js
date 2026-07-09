@@ -45,4 +45,26 @@ describe('createApp - static frontend fallback', () => {
     const res = await request(app).get('/api/rota-que-nao-existe');
     expect(res.status).toBe(404);
   });
+
+  // Regression test: browsers always attach an Origin header to
+  // `<script type="module">` fetches, even for same-origin requests. The
+  // built index.html's script tag has `crossorigin`, so loading the app
+  // directly from this server (as the packaged Electron build does, via
+  // http://localhost:3001) sends `Origin: http://localhost:3001` on its own
+  // JS/CSS/page requests. CORS must only apply to /api, or the app 500s on
+  // its own assets the moment it isn't loaded through the Vite dev server.
+  it('serves the frontend even with an Origin header that is not in the /api allowlist', async () => {
+    const res = await request(app)
+      .get('/alguma-rota-do-frontend')
+      .set('Origin', 'http://localhost:3001');
+    expect(res.status).toBe(200);
+    expect(res.text).toContain('<div id="root">');
+  });
+
+  it('still rejects an unrecognized Origin on /api routes', async () => {
+    const res = await request(app)
+      .get('/api/health')
+      .set('Origin', 'http://evil.example.com');
+    expect(res.status).toBe(500);
+  });
 });
