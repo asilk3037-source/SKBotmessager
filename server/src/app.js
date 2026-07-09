@@ -15,7 +15,16 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export function createApp() {
   const app = express();
 
-  app.use(cors());
+  const allowedOrigins = new Set(['http://localhost:5173', 'http://127.0.0.1:5173']);
+  app.use(cors({
+    origin(origin, callback) {
+      // No Origin header (same-origin navigation, curl, the Electron window loading
+      // this same server, or server-to-server calls) is always allowed; only
+      // cross-origin browser requests are restricted to the known dev server.
+      if (!origin || allowedOrigins.has(origin)) return callback(null, true);
+      callback(new Error('Not allowed by CORS'));
+    },
+  }));
   app.use(express.json({ limit: '15mb' }));
 
   app.use('/api/contacts', contactsRouter);

@@ -110,7 +110,11 @@ export default function ConfiguracoesPage() {
       {smsSettings && (
         <form
           className="card"
-          onSubmit={(e) => { e.preventDefault(); saveSection('sms', { sms: smsSettings }); }}
+          onSubmit={(e) => {
+            e.preventDefault();
+            const { authTokenSet, passwordSet, ...sms } = smsSettings;
+            saveSection('sms', { sms });
+          }}
         >
           <h3>SMS</h3>
           <div className="field">
@@ -141,6 +145,7 @@ export default function ConfiguracoesPage() {
                   <input
                     id="twilio-auth-token"
                     type="password"
+                    placeholder={smsSettings.authTokenSet ? 'Já configurado — deixe em branco para manter' : ''}
                     value={smsSettings.authToken || ''}
                     onChange={(e) => setSmsSettings((s) => ({ ...s, authToken: e.target.value }))}
                   />
@@ -204,6 +209,7 @@ export default function ConfiguracoesPage() {
                   <input
                     id="android-password"
                     type="password"
+                    placeholder={smsSettings.passwordSet ? 'Já configurada — deixe em branco para manter' : ''}
                     value={smsSettings.password || ''}
                     onChange={(e) => setSmsSettings((s) => ({ ...s, password: e.target.value }))}
                   />
@@ -228,7 +234,11 @@ export default function ConfiguracoesPage() {
       {emailSettings && (
         <form
           className="card"
-          onSubmit={(e) => { e.preventDefault(); saveSection('email', { email: emailSettings }); }}
+          onSubmit={(e) => {
+            e.preventDefault();
+            const { appPasswordSet, ...email } = emailSettings;
+            saveSection('email', { email });
+          }}
         >
           <h3>Email</h3>
           <p className="helper-text">
@@ -251,7 +261,7 @@ export default function ConfiguracoesPage() {
               <input
                 id="email-app-password"
                 type="password"
-                placeholder="16 caracteres"
+                placeholder={emailSettings.appPasswordSet ? 'Já configurada — deixe em branco para manter' : '16 caracteres'}
                 value={emailSettings.appPassword || ''}
                 onChange={(e) => setEmailSettings((s) => ({ ...s, appPassword: e.target.value }))}
               />

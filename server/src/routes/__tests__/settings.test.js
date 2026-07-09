@@ -17,6 +17,21 @@ describe('GET /api/settings', () => {
     expect(res.body.settings.sms.provider).toBe('twilio');
     expect(res.body.smsProviders.map((p) => p.id)).toEqual(['twilio', 'mock', 'androidGateway']);
   });
+
+  it('never returns stored secrets, only whether they are set', async () => {
+    db.data.settings.sms.authToken = 'super-secret-token';
+    db.data.settings.sms.password = 'android-secret';
+    db.data.settings.email.appPassword = 'gmail-app-password';
+    await db.write();
+
+    const res = await request(app).get('/api/settings');
+    expect(res.body.settings.sms.authToken).toBe('');
+    expect(res.body.settings.sms.authTokenSet).toBe(true);
+    expect(res.body.settings.sms.password).toBe('');
+    expect(res.body.settings.sms.passwordSet).toBe(true);
+    expect(res.body.settings.email.appPassword).toBe('');
+    expect(res.body.settings.email.appPasswordSet).toBe(true);
+  });
 });
 
 describe('PUT /api/settings', () => {
@@ -60,5 +75,28 @@ describe('PUT /api/settings', () => {
     const before = JSON.stringify(db.data.settings);
     await request(app).put('/api/settings').send({});
     expect(JSON.stringify(db.data.settings)).toBe(before);
+  });
+
+  it('keeps the stored secret when a blank value is submitted', async () => {
+    db.data.settings.sms.authToken = 'existing-token';
+    await db.write();
+
+    const res = await request(app)
+      .put('/api/settings')
+      .send({ sms: { provider: 'twilio', authToken: '' } });
+
+    expect(res.body.sms.authTokenSet).toBe(true);
+    expect(db.data.settings.sms.authToken).toBe('existing-token');
+  });
+
+  it('overwrites the stored secret when a new value is submitted', async () => {
+    db.data.settings.sms.authToken = 'existing-token';
+    await db.write();
+
+    await request(app)
+      .put('/api/settings')
+      .send({ sms: { provider: 'twilio', authToken: 'new-token' } });
+
+    expect(db.data.settings.sms.authToken).toBe('new-token');
   });
 });
