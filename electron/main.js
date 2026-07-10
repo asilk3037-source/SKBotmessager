@@ -5,7 +5,9 @@ const { waitForServer } = require('./waitForServer.js');
 const { loadWindowState, saveWindowState, clampToDisplays } = require('./windowState.js');
 
 const DEV_URL = process.env.ELECTRON_START_URL;
-const SERVER_URL = 'http://localhost:3001';
+// 127.0.0.1 explicitly (not "localhost") to match the server's loopback-only
+// bind exactly and avoid an IPv6 (::1) vs IPv4 DNS resolution mismatch.
+const SERVER_URL = 'http://127.0.0.1:3001';
 
 let win;
 let serverProcess;
