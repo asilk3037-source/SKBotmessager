@@ -21,6 +21,67 @@
   --shadow-lg: 0 10px 30px rgba(16, 24, 20, 0.12);
 }
 
+/* Dark theme tokens. Applied automatically when the OS is in dark mode, and
+   overridable either way by the manual toggle setting data-theme on <html>. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #12161a;
+    --surface: #1b2126;
+    --border: #2b3339;
+    --text: #e8ecee;
+    --text-muted: #96a1a8;
+    --primary: #2fbf85;
+    --primary-hover: #3fd396;
+    --primary-light: #16302573;
+    --danger: #e5695a;
+    --danger-light: #3a201d;
+    --warning: #e0ab52;
+    --warning-light: #3a2f18;
+    --titlebar-bg: #0a0f0c;
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 1px rgba(0, 0, 0, 0.2);
+    --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.25);
+    --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.45);
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #12161a;
+  --surface: #1b2126;
+  --border: #2b3339;
+  --text: #e8ecee;
+  --text-muted: #96a1a8;
+  --primary: #2fbf85;
+  --primary-hover: #3fd396;
+  --primary-light: #16302573;
+  --danger: #e5695a;
+  --danger-light: #3a201d;
+  --warning: #e0ab52;
+  --warning-light: #3a2f18;
+  --titlebar-bg: #0a0f0c;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 1px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.25);
+  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.45);
+}
+
+:root[data-theme="light"] {
+  --bg: #f2f4f3;
+  --surface: #ffffff;
+  --border: #e4e7e6;
+  --text: #1a1d29;
+  --text-muted: #6b7280;
+  --primary: #178457;
+  --primary-hover: #126a45;
+  --primary-light: #e6f4ee;
+  --danger: #c0392b;
+  --danger-light: #fdecea;
+  --warning: #b7791f;
+  --warning-light: #fef6e7;
+  --titlebar-bg: #0e1f17;
+  --shadow-sm: 0 1px 2px rgba(16, 24, 20, 0.06), 0 1px 1px rgba(16, 24, 20, 0.04);
+  --shadow-md: 0 4px 14px rgba(16, 24, 20, 0.08), 0 1px 3px rgba(16, 24, 20, 0.06);
+  --shadow-lg: 0 10px 30px rgba(16, 24, 20, 0.12);
+}
+
 * { box-sizing: border-box; }
 
 html, body, #root {
@@ -32,8 +93,23 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   background: var(--bg);
   color: var(--text);
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  transition: background 0.15s, color 0.15s;
 }
+
+h1, h2, h3, h4 { line-height: 1.25; }
+
+/* Custom scrollbar (WebKit/Chromium, which Electron always uses) */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 999px;
+  border: 2px solid var(--bg);
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
 button, input, select, textarea {
   font-family: inherit;
@@ -144,6 +220,8 @@ a:focus-visible, button:focus-visible, .tag:focus-visible {
   box-shadow: var(--shadow-lg);
   position: relative;
   z-index: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .sidebar-brand {
@@ -164,7 +242,26 @@ a:focus-visible, button:focus-visible, .tag:focus-visible {
   display: flex;
   flex-direction: column;
   gap: 3px;
+  flex: 1;
 }
+
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.05);
+  color: #d7f5e6;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.theme-toggle:hover { background: rgba(255, 255, 255, 0.1); }
 
 .sidebar a {
   display: flex;
@@ -821,3 +918,17 @@ tr.row-warning td:first-child { box-shadow: inset 3px 0 0 var(--warning); }
 }
 
 .titlebar [data-tooltip]::after { top: 100%; }
+
+/* Page transition: a subtle fade/slide when the route changes */
+.page-transition {
+  animation: page-fade-in 0.18s ease;
+}
+
+@keyframes page-fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-transition { animation: none; }
+}
