@@ -4,8 +4,27 @@ import { renderTemplate } from './renderTemplate.js';
 import whatsappService from './whatsappService.js';
 import { sendSms } from './smsService.js';
 import { sendEmail } from './emailService.js';
+import { sendWebhookEvent } from './webhookService.js';
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// Fires the campaign.completed/campaign.failed webhook once a campaign
+// reaches a terminal state. Never lets a webhook failure propagate - it's
+// purely a notification side effect, not part of the campaign's own outcome.
+function notifyCampaignFinished(campaign) {
+  const event = campaign.status === 'completed' ? 'campaign.completed' : 'campaign.failed';
+  sendWebhookEvent(event, {
+    id: campaign.id,
+    name: campaign.name,
+    channel: campaign.channel,
+    status: campaign.status,
+    totalCount: campaign.totalCount,
+    sentCount: campaign.sentCount,
+    failedCount: campaign.failedCount,
+    error: campaign.error ?? null,
+    finishedAt: campaign.finishedAt ?? null
+  }).catch(() => {});
+}
 
 // Re-serializing the whole db.json after every single message is a real I/O
 // bottleneck for large campaigns; flush periodically instead, plus always at
@@ -39,6 +58,7 @@ export async function runCampaign(campaignId) {
     campaign.status = 'failed';
     campaign.error = 'Template não encontrado.';
     await db.write();
+    notifyCampaignFinished(campaign);
     return;
   }
 
@@ -105,6 +125,7 @@ export async function runCampaign(campaignId) {
   campaign.status = 'completed';
   campaign.finishedAt = now();
   await db.write();
+  notifyCampaignFinished(campaign);
 }
 
 export async function startCampaign({ name, templateId, channel, contactIds }) {
@@ -133,6 +154,7 @@ export async function startCampaign({ name, templateId, channel, contactIds }) {
     campaign.status = 'failed';
     campaign.error = err.message || String(err);
     await db.write();
+    notifyCampaignFinished(campaign);
   });
 
   return campaign;
@@ -190,6 +212,7 @@ export async function runDueScheduledCampaigns() {
       campaign.status = 'failed';
       campaign.error = err.message || String(err);
       await db.write();
+      notifyCampaignFinished(campaign);
     });
   }
 }

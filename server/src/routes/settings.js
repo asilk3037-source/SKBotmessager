@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import db from '../db/index.js';
 import { listProviders } from '../services/smsService.js';
+import { sendTestWebhook } from '../services/webhookService.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 
 const router = Router();
@@ -22,7 +23,8 @@ function maskSettings(settings) {
       appPassword: '',
       appPasswordSet: Boolean(settings.email.appPassword)
     },
-    delayBetweenMessagesMs: settings.delayBetweenMessagesMs
+    delayBetweenMessagesMs: settings.delayBetweenMessagesMs,
+    webhookUrl: settings.webhookUrl
   };
 }
 
@@ -34,7 +36,18 @@ router.get('/', (req, res) => {
 });
 
 router.put('/', asyncHandler(async (req, res) => {
-  const { sms, email, delayBetweenMessagesMs } = req.body;
+  const { sms, email, delayBetweenMessagesMs, webhookUrl } = req.body;
+
+  if (webhookUrl) {
+    try {
+      const parsed = new URL(webhookUrl);
+      if (!['http:', 'https:'].includes(parsed.protocol)) {
+        return res.status(400).json({ error: 'webhookUrl deve ser um endereço http:// ou https://.' });
+      }
+    } catch {
+      return res.status(400).json({ error: 'webhookUrl inválida.' });
+    }
+  }
 
   if (sms?.baseUrl) {
     // The Android SMS gateway is meant to be pointed at a phone on the local
@@ -68,9 +81,31 @@ router.put('/', asyncHandler(async (req, res) => {
   if (typeof delayBetweenMessagesMs === 'number' && delayBetweenMessagesMs >= 500) {
     db.data.settings.delayBetweenMessagesMs = delayBetweenMessagesMs;
   }
+  if (typeof webhookUrl === 'string') {
+    db.data.settings.webhookUrl = webhookUrl;
+  }
 
   await db.write();
   res.json(maskSettings(db.data.settings));
+}));
+
+router.post('/test-webhook', asyncHandler(async (req, res) => {
+  const url = req.body?.webhookUrl || db.data.settings.webhookUrl;
+  if (!url) {
+    return res.status(400).json({ error: 'Nenhuma URL de webhook configurada.' });
+  }
+
+  try {
+    new URL(url);
+  } catch {
+    return res.status(400).json({ error: 'webhookUrl inválida.' });
+  }
+
+  const result = await sendTestWebhook(url);
+  if (!result.sent) {
+    return res.status(502).json({ ...result, error: 'Não foi possível entregar o webhook de teste.' });
+  }
+  res.json({ ok: true });
 }));
 
 export default router;

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import request from 'supertest';
 import { createApp } from '../../app.js';
 import { resetDb } from './testUtils.js';
@@ -138,5 +138,83 @@ describe('PUT /api/settings', () => {
     const persisted = await db.adapter.read();
     expect(persisted.settings.sms.authToken).not.toBe('plaintext-in-memory');
     expect(persisted.settings.sms.authToken.startsWith('enc:v1:')).toBe(true);
+  });
+
+  it('saves a valid webhookUrl', async () => {
+    const res = await request(app).put('/api/settings').send({ webhookUrl: 'https://example.com/hook' });
+    expect(res.status).toBe(200);
+    expect(res.body.webhookUrl).toBe('https://example.com/hook');
+    expect(db.data.settings.webhookUrl).toBe('https://example.com/hook');
+  });
+
+  it('allows clearing the webhookUrl with an empty string', async () => {
+    db.data.settings.webhookUrl = 'https://example.com/hook';
+    await db.write();
+
+    const res = await request(app).put('/api/settings').send({ webhookUrl: '' });
+    expect(res.body.webhookUrl).toBe('');
+    expect(db.data.settings.webhookUrl).toBe('');
+  });
+
+  it('rejects a malformed webhookUrl', async () => {
+    const res = await request(app).put('/api/settings').send({ webhookUrl: 'not a url' });
+    expect(res.status).toBe(400);
+    expect(db.data.settings.webhookUrl).toBe('');
+  });
+
+  it('rejects a webhookUrl with a non-http(s) protocol', async () => {
+    const res = await request(app).put('/api/settings').send({ webhookUrl: 'ftp://example.com/hook' });
+    expect(res.status).toBe(400);
+  });
+});
+
+describe('POST /api/settings/test-webhook', () => {
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn());
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('sends a test event to the URL in the request body', async () => {
+    fetch.mockResolvedValue({ ok: true, status: 200 });
+
+    const res = await request(app).post('/api/settings/test-webhook').send({ webhookUrl: 'https://example.com/hook' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+    expect(fetch).toHaveBeenCalledWith('https://example.com/hook', expect.anything());
+  });
+
+  it('falls back to the stored webhookUrl when the request body has none', async () => {
+    db.data.settings.webhookUrl = 'https://example.com/stored-hook';
+    await db.write();
+    fetch.mockResolvedValue({ ok: true, status: 200 });
+
+    const res = await request(app).post('/api/settings/test-webhook').send({});
+
+    expect(res.status).toBe(200);
+    expect(fetch).toHaveBeenCalledWith('https://example.com/stored-hook', expect.anything());
+  });
+
+  it('returns 400 when no URL is configured or provided', async () => {
+    const res = await request(app).post('/api/settings/test-webhook').send({});
+    expect(res.status).toBe(400);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it('returns 400 for a malformed URL', async () => {
+    const res = await request(app).post('/api/settings/test-webhook').send({ webhookUrl: 'not a url' });
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 502 when the endpoint cannot be reached', async () => {
+    fetch.mockRejectedValue(new Error('ECONNREFUSED'));
+
+    const res = await request(app).post('/api/settings/test-webhook').send({ webhookUrl: 'https://example.com/hook' });
+
+    expect(res.status).toBe(502);
+    expect(res.body.error).toMatch(/não foi possível/i);
   });
 });

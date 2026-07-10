@@ -28,7 +28,8 @@ const defaultData = {
       appPassword: '',
       fromName: ''
     },
-    delayBetweenMessagesMs: 3000
+    delayBetweenMessagesMs: 3000,
+    webhookUrl: ''
   }
 };
 
@@ -47,6 +48,7 @@ db.data.settings.sms.login ??= defaultData.settings.sms.login;
 db.data.settings.sms.password ??= defaultData.settings.sms.password;
 db.data.settings.email ??= defaultData.settings.email;
 db.data.settings.delayBetweenMessagesMs ??= defaultData.settings.delayBetweenMessagesMs;
+db.data.settings.webhookUrl ??= defaultData.settings.webhookUrl;
 
 // Secrets (Twilio authToken, Android Gateway password, Gmail app password)
 // are encrypted at rest in db.json but always kept decrypted in `db.data`

@@ -16,6 +16,8 @@ export default function ConfiguracoesPage() {
   const [smsSettings, setSmsSettings] = useState(null);
   const [emailSettings, setEmailSettings] = useState(null);
   const [delayMs, setDelayMs] = useState(3000);
+  const [webhookUrl, setWebhookUrl] = useState('');
+  const [testingWebhook, setTestingWebhook] = useState(false);
   const [savingSection, setSavingSection] = useState('');
   const [savedSection, setSavedSection] = useState('');
   const [error, setError] = useState('');
@@ -39,6 +41,7 @@ export default function ConfiguracoesPage() {
       setSmsSettings(data.settings.sms);
       setEmailSettings(data.settings.email);
       setDelayMs(data.settings.delayBetweenMessagesMs);
+      setWebhookUrl(data.settings.webhookUrl || '');
     } catch (err) {
       setError(err.message);
     }
@@ -92,6 +95,19 @@ export default function ConfiguracoesPage() {
       setError(err.message);
     } finally {
       setSavingSection('');
+    }
+  }
+
+  async function handleTestWebhook() {
+    setTestingWebhook(true);
+    setError('');
+    try {
+      await api.testWebhook(webhookUrl);
+      showToast('Webhook de teste enviado com sucesso.');
+    } catch (err) {
+      showToast(err.message, { type: 'error' });
+    } finally {
+      setTestingWebhook(false);
     }
   }
 
@@ -341,6 +357,43 @@ export default function ConfiguracoesPage() {
           <button type="submit" className="btn" disabled={savingSection === 'delay'}>
             {savingSection === 'delay' ? 'Salvando...' : 'Salvar ritmo de envio'}
           </button>
+        </div>
+      </form>
+
+      <form
+        className="card"
+        onSubmit={(e) => { e.preventDefault(); saveSection('webhook', { webhookUrl }); }}
+      >
+        <h3>Webhook</h3>
+        <p className="helper-text">
+          Receba uma notificação HTTP (POST com JSON) sempre que um disparo terminar, com sucesso ou falha.
+          Útil para integrar com Zapier, n8n, Make ou seu próprio sistema.
+        </p>
+        <div className="field">
+          <label htmlFor="webhook-url">URL do webhook</label>
+          <input
+            id="webhook-url"
+            type="text"
+            placeholder="https://sua-automacao.com/webhook"
+            value={webhookUrl}
+            onChange={(e) => setWebhookUrl(e.target.value)}
+          />
+        </div>
+        <div className="toolbar">
+          {savedSection === 'webhook' && <span className="helper-text">Configurações salvas.</span>}
+          <div className="row" style={{ flex: 'none' }}>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              disabled={!webhookUrl || testingWebhook}
+              onClick={handleTestWebhook}
+            >
+              {testingWebhook ? 'Testando...' : 'Testar webhook'}
+            </button>
+            <button type="submit" className="btn" disabled={savingSection === 'webhook'}>
+              {savingSection === 'webhook' ? 'Salvando...' : 'Salvar webhook'}
+            </button>
+          </div>
         </div>
       </form>
       <ConfirmDialog

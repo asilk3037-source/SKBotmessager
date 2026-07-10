@@ -11,6 +11,9 @@ vi.mock('../smsService.js', () => ({ sendSms: (...args) => sendSmsMock(...args) 
 const sendEmailMock = vi.fn();
 vi.mock('../emailService.js', () => ({ sendEmail: (...args) => sendEmailMock(...args) }));
 
+const sendWebhookEventMock = vi.fn().mockResolvedValue({ sent: false, reason: 'not_configured' });
+vi.mock('../webhookService.js', () => ({ sendWebhookEvent: (...args) => sendWebhookEventMock(...args) }));
+
 const db = (await import('../../db/index.js')).default;
 const { runCampaign, startCampaign, scheduleCampaign, cancelScheduledCampaign, runDueScheduledCampaigns } =
   await import('../campaignRunner.js');
@@ -45,6 +48,8 @@ beforeEach(() => {
   sendMessageMock.mockReset();
   sendSmsMock.mockReset();
   sendEmailMock.mockReset();
+  sendWebhookEventMock.mockClear();
+  sendWebhookEventMock.mockResolvedValue({ sent: false, reason: 'not_configured' });
   db.data.contacts = [];
   db.data.templates = [];
   db.data.campaigns = [];
@@ -76,6 +81,7 @@ describe('runCampaign', () => {
     const campaign = db.data.campaigns[0];
     expect(campaign.status).toBe('failed');
     expect(campaign.error).toMatch(/template não encontrado/i);
+    expect(sendWebhookEventMock).toHaveBeenCalledWith('campaign.failed', expect.objectContaining({ id: 'camp-1' }));
   });
 
   it('sends via WhatsApp, renders the template, and records a sent message', async () => {
@@ -376,6 +382,11 @@ describe('startCampaign', () => {
     const updated = db.data.campaigns.find((c) => c.id === campaign.id);
     expect(updated.status).toBe('completed');
     expect(updated.sentCount).toBe(1);
+
+    expect(sendWebhookEventMock).toHaveBeenCalledWith(
+      'campaign.completed',
+      expect.objectContaining({ id: campaign.id, sentCount: 1, failedCount: 0 })
+    );
   });
 
   it('marks the campaign as failed if runCampaign rejects unexpectedly', async () => {
@@ -398,6 +409,11 @@ describe('startCampaign', () => {
     const updated = db.data.campaigns.find((c) => c.id === campaign.id);
     expect(updated.status).toBe('failed');
     expect(updated.error).toMatch(/cannot read prop|null/i);
+
+    expect(sendWebhookEventMock).toHaveBeenCalledWith(
+      'campaign.failed',
+      expect.objectContaining({ id: campaign.id, status: 'failed' })
+    );
   });
 });
 
@@ -481,6 +497,7 @@ describe('runDueScheduledCampaigns', () => {
 
     expect(db.data.campaigns[0].status).toBe('completed');
     expect(sendSmsMock).toHaveBeenCalled();
+    expect(sendWebhookEventMock).toHaveBeenCalledWith('campaign.completed', expect.objectContaining({ id: 'camp-1' }));
   });
 
   it('leaves campaigns scheduled for the future untouched', async () => {

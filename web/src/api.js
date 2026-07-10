@@ -68,6 +68,7 @@ export const api = {
   // Settings
   getSettings: () => request('/settings'),
   updateSettings: (payload) => request('/settings', { method: 'PUT', body: JSON.stringify(payload) }),
+  testWebhook: (webhookUrl) => request('/settings/test-webhook', { method: 'POST', body: JSON.stringify({ webhookUrl }) }),
 
   // WhatsApp
   getWhatsappStatus: () => request('/whatsapp/status'),

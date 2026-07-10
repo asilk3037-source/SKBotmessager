@@ -17,5 +17,6 @@ export async function resetDb() {
   };
   db.data.settings.email = { user: '', appPassword: '', fromName: '' };
   db.data.settings.delayBetweenMessagesMs = 3000;
+  db.data.settings.webhookUrl = '';
   await db.write();
 }

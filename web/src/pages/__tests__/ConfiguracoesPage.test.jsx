@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import ConfiguracoesPage from '../ConfiguracoesPage.jsx';
+import { ToastProvider } from '../../components/ToastProvider.jsx';
 import { api } from '../../api.js';
 
 vi.mock('../../api.js', () => ({
@@ -10,7 +11,8 @@ vi.mock('../../api.js', () => ({
     connectWhatsapp: vi.fn(),
     logoutWhatsapp: vi.fn(),
     getSettings: vi.fn(),
-    updateSettings: vi.fn()
+    updateSettings: vi.fn(),
+    testWebhook: vi.fn()
   }
 }));
 
@@ -26,6 +28,7 @@ function settingsResponse(overrides = {}) {
       sms: { provider: 'twilio', accountSid: '', authToken: '', fromNumber: '', baseUrl: '', login: '', password: '' },
       email: { user: '', appPassword: '', fromName: '' },
       delayBetweenMessagesMs: 3000,
+      webhookUrl: '',
       ...overrides
     },
     smsProviders: SMS_PROVIDERS
@@ -203,5 +206,64 @@ describe('ConfiguracoesPage - Email and Ritmo de envio', () => {
     await userEvent.click(screen.getByRole('button', { name: /salvar ritmo de envio/i }));
 
     await waitFor(() => expect(api.updateSettings).toHaveBeenCalledWith({ delayBetweenMessagesMs: 5000 }));
+  });
+});
+
+describe('ConfiguracoesPage - Webhook', () => {
+  it('loads the stored webhook URL and saves an edited value', async () => {
+    api.getSettings.mockResolvedValue(settingsResponse({ webhookUrl: 'https://old.example.com/hook' }));
+    api.updateSettings.mockResolvedValue({});
+    render(<ConfiguracoesPage />);
+
+    const urlInput = await screen.findByLabelText(/url do webhook/i);
+    expect(urlInput).toHaveValue('https://old.example.com/hook');
+
+    await userEvent.clear(urlInput);
+    await userEvent.type(urlInput, 'https://new.example.com/hook');
+    await userEvent.click(screen.getByRole('button', { name: /salvar webhook/i }));
+
+    await waitFor(() =>
+      expect(api.updateSettings).toHaveBeenCalledWith({ webhookUrl: 'https://new.example.com/hook' })
+    );
+  });
+
+  it('disables the "Testar webhook" button when the URL field is empty', async () => {
+    render(<ConfiguracoesPage />);
+    await waitFor(() => expect(screen.getByRole('button', { name: /testar webhook/i })).toBeDisabled());
+  });
+
+  it('sends a test webhook and shows a success toast', async () => {
+    api.getSettings.mockResolvedValue(settingsResponse({ webhookUrl: 'https://example.com/hook' }));
+    api.testWebhook.mockResolvedValue({ ok: true });
+
+    render(
+      <ToastProvider>
+        <ConfiguracoesPage />
+      </ToastProvider>
+    );
+
+    await waitFor(() => expect(screen.getByRole('button', { name: /testar webhook/i })).toBeEnabled());
+    await userEvent.click(screen.getByRole('button', { name: /testar webhook/i }));
+
+    expect(api.testWebhook).toHaveBeenCalledWith('https://example.com/hook');
+    await waitFor(() => expect(screen.getByText(/enviado com sucesso/i)).toBeInTheDocument());
+  });
+
+  it('shows an error toast when the test webhook fails', async () => {
+    api.getSettings.mockResolvedValue(settingsResponse({ webhookUrl: 'https://example.com/hook' }));
+    api.testWebhook.mockRejectedValue(new Error('Não foi possível entregar o webhook de teste.'));
+
+    render(
+      <ToastProvider>
+        <ConfiguracoesPage />
+      </ToastProvider>
+    );
+
+    await waitFor(() => expect(screen.getByRole('button', { name: /testar webhook/i })).toBeEnabled());
+    await userEvent.click(screen.getByRole('button', { name: /testar webhook/i }));
+
+    await waitFor(() =>
+      expect(screen.getByText('Não foi possível entregar o webhook de teste.')).toBeInTheDocument()
+    );
   });
 });
