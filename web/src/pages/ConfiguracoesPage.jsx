@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { api } from '../api.js';
 import ConfirmDialog from '../components/ConfirmDialog.jsx';
+import { useToast } from '../components/ToastProvider.jsx';
 
 const STATUS_LABELS = {
   disconnected: { text: 'Desconectado', className: 'badge-neutral' },
@@ -20,6 +21,7 @@ export default function ConfiguracoesPage() {
   const [error, setError] = useState('');
   const [confirmState, setConfirmState] = useState(null);
   const pollRef = useRef(null);
+  const showToast = useToast();
 
   async function loadWaStatus() {
     try {
@@ -85,6 +87,7 @@ export default function ConfiguracoesPage() {
     try {
       await api.updateSettings(payload);
       setSavedSection(section);
+      showToast('Configurações salvas.');
     } catch (err) {
       setError(err.message);
     } finally {

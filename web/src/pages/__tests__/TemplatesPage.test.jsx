@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import TemplatesPage from '../TemplatesPage.jsx';
+import { ToastProvider } from '../../components/ToastProvider.jsx';
 import { api } from '../../api.js';
 
 vi.mock('../../api.js', () => ({
@@ -129,6 +130,21 @@ describe('TemplatesPage', () => {
 
     expect(screen.getByRole('heading', { name: /novo template/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/nome do template/i)).toHaveValue('');
+  });
+
+  it('shows a toast confirmation after successfully creating a template', async () => {
+    api.createTemplate.mockResolvedValue({ id: 'new' });
+    render(
+      <ToastProvider>
+        <TemplatesPage />
+      </ToastProvider>
+    );
+
+    await userEvent.type(screen.getByLabelText(/nome do template/i), 'Promo');
+    await userEvent.type(screen.getByLabelText(/^mensagem$/i), 'Ola');
+    await userEvent.click(screen.getByRole('button', { name: /criar template/i }));
+
+    await waitFor(() => expect(screen.getByText('Template criado.')).toBeInTheDocument());
   });
 
   it('deletes a template after confirmation', async () => {

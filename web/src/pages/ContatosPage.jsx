@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { api } from '../api.js';
 import ConfirmDialog from '../components/ConfirmDialog.jsx';
 import Pagination from '../components/Pagination.jsx';
+import { useToast } from '../components/ToastProvider.jsx';
 
 const PAGE_SIZE = 50;
 
@@ -17,6 +18,7 @@ export default function ContatosPage() {
   const [error, setError] = useState('');
   const [confirmState, setConfirmState] = useState(null);
   const requestIdRef = useRef(0);
+  const showToast = useToast();
 
   const loadBatches = useCallback(async () => {
     try {
@@ -68,6 +70,7 @@ export default function ContatosPage() {
         try {
           await api.deleteContact(id);
           loadContacts();
+          showToast('Contato removido.');
         } catch (err) {
           setError(err.message);
         }
@@ -89,6 +92,7 @@ export default function ContatosPage() {
       if (selectedBatch === batchId) setSelectedBatch('');
       loadBatches();
       loadContacts();
+      showToast('Lote removido.');
     } catch (err) {
       setError(err.message);
     }

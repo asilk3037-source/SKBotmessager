@@ -130,7 +130,10 @@ export default function DisparoPage() {
         <div className="card">
           <h3>{campaign.name}</h3>
           <div className="progress-bar" style={{ marginBottom: 10 }}>
-            <div className="progress-bar-fill" style={{ width: `${pct}%` }} />
+            <div
+              className={`progress-bar-fill${campaign.status === 'running' ? ' running' : ''}`}
+              style={{ width: `${pct}%` }}
+            />
           </div>
           <p>{campaign.processedCount} de {campaign.totalCount} processados ({pct}%)</p>
           <div className="stat-grid">

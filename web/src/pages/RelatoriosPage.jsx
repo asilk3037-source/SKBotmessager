@@ -119,7 +119,7 @@ export default function RelatoriosPage() {
               </thead>
               <tbody>
                 {messages.map((m) => (
-                  <tr key={m.id}>
+                  <tr key={m.id} className={m.status === 'failed' ? 'row-danger' : m.status === 'pending' ? 'row-warning' : ''}>
                     <td>{new Date(m.createdAt).toLocaleString('pt-BR')}</td>
                     <td>{m.contactName}</td>
                     <td>{m.recipient || '—'}</td>

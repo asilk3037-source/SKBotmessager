@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../api.js';
 import { CHANNEL_LABELS } from '../constants.js';
 import ConfirmDialog from '../components/ConfirmDialog.jsx';
+import { useToast } from '../components/ToastProvider.jsx';
 
 const EMPTY_FORM = { id: null, name: '', content: '', subject: '', channel: 'any', isDefault: false };
 
@@ -11,6 +12,7 @@ export default function TemplatesPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [confirmState, setConfirmState] = useState(null);
+  const showToast = useToast();
 
   async function load() {
     try {
@@ -39,6 +41,7 @@ export default function TemplatesPage() {
         channel: form.channel,
         isDefault: form.isDefault,
       };
+      const wasEditing = Boolean(form.id);
       if (form.id) {
         await api.updateTemplate(form.id, payload);
       } else {
@@ -46,6 +49,7 @@ export default function TemplatesPage() {
       }
       setForm(EMPTY_FORM);
       await load();
+      showToast(wasEditing ? 'Template atualizado.' : 'Template criado.');
     } catch (err) {
       setError(err.message);
     } finally {
@@ -61,6 +65,7 @@ export default function TemplatesPage() {
         try {
           await api.deleteTemplate(id);
           load();
+          showToast('Template removido.');
         } catch (err) {
           setError(err.message);
         }

@@ -28,14 +28,26 @@ export function createApp() {
   // `<script type="module">` fetches even for same-origin requests - a
   // global CORS check here would 500 the app's own JS/CSS when it's loaded
   // directly from this server (e.g. the packaged Electron build hitting
-  // http://localhost:3001), since that origin was never meant to need one.
-  app.use('/api', cors({
-    origin(origin, callback) {
-      // No Origin header (curl, server-to-server calls) is always allowed;
-      // only cross-origin browser requests are restricted to the known dev server.
-      if (!origin || allowedOrigins.has(origin)) return callback(null, true);
-      callback(new Error('Not allowed by CORS'));
-    },
+  // http://127.0.0.1:3001), since that origin was never meant to need one.
+  app.use('/api', cors((req, callback) => {
+    const origin = req.header('Origin');
+    // No Origin header (curl, server-to-server calls) is always allowed.
+    // A same-origin request is always allowed too - browsers attach Origin
+    // to same-origin POST/PUT/DELETE fetches as well, and this server's own
+    // SPA (served from whatever host:port it's actually running on, not
+    // necessarily 3001) making its own /api calls is exactly that case, not
+    // a cross-origin one. Only genuinely cross-origin requests are
+    // restricted to the known dev server.
+    let sameOrigin = false;
+    if (origin) {
+      try {
+        sameOrigin = new URL(origin).host === req.get('host');
+      } catch {
+        sameOrigin = false;
+      }
+    }
+    const allowed = !origin || sameOrigin || allowedOrigins.has(origin);
+    callback(null, { origin: allowed });
   }));
   app.use(express.json({ limit: '15mb' }));
   app.use('/api', rateLimit({

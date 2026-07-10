@@ -40,6 +40,25 @@ button, input, select, textarea {
   font-size: 14px;
 }
 
+input[type="checkbox"], input[type="radio"] {
+  accent-color: var(--primary);
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+/* Keyboard focus gets a visible ring everywhere; mouse clicks don't (the
+   browser only matches :focus-visible for keyboard/programmatic focus). */
+a:focus-visible, button:focus-visible, .tag:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+.sidebar a:focus-visible {
+  outline-color: #4ade9a;
+}
+
 /* Custom Electron titlebar */
 .titlebar {
   height: var(--titlebar-h);
@@ -255,6 +274,16 @@ input[type="text"], input[type="number"], input[type="password"], input[type="se
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 
+select {
+  appearance: none;
+  padding-right: 34px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 16px;
+  cursor: pointer;
+}
+
 input:focus, select:focus, textarea:focus {
   outline: none;
   border-color: var(--primary);
@@ -320,7 +349,11 @@ th {
 }
 
 tr:last-child td { border-bottom: none; }
-tr:hover td { background: #fafbfa; }
+tbody tr { transition: background 0.1s; }
+tbody tr:hover td { background: var(--primary-light); }
+
+tr.row-danger td:first-child { box-shadow: inset 3px 0 0 var(--danger); }
+tr.row-warning td:first-child { box-shadow: inset 3px 0 0 var(--warning); }
 
 .badge {
   display: inline-block;
@@ -382,6 +415,26 @@ tr:hover td { background: #fafbfa; }
   height: 100%;
   background: var(--primary);
   transition: width 0.3s ease;
+}
+
+.progress-bar-fill.running {
+  background-image: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.25) 25%, transparent 25%,
+    transparent 50%, rgba(255, 255, 255, 0.25) 50%,
+    rgba(255, 255, 255, 0.25) 75%, transparent 75%, transparent
+  );
+  background-size: 22px 22px;
+  animation: progress-stripes 1s linear infinite;
+}
+
+@keyframes progress-stripes {
+  from { background-position: 0 0; }
+  to { background-position: 22px 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progress-bar-fill.running { animation: none; }
 }
 
 .toolbar {
@@ -525,6 +578,58 @@ tr:hover td { background: #fafbfa; }
   display: flex;
   justify-content: flex-end;
   gap: 10px;
+}
+
+/* Toast notifications */
+.toast-stack {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 300;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 340px;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-lg);
+  font-size: 13.5px;
+  font-weight: 500;
+  animation: toast-in 0.2s ease;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--text-muted);
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.toast-success { border-left-color: var(--primary); }
+.toast-error { border-left-color: var(--danger); }
+
+.toast span { flex: 1; }
+
+.toast-close {
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 2px;
+}
+.toast-close:hover { color: var(--text); }
+
+@media (prefers-reduced-motion: reduce) {
+  .toast { animation: none; }
 }
 
 /* ---- Responsive: tablet and mobile ---- */

@@ -61,10 +61,35 @@ describe('createApp - static frontend fallback', () => {
     expect(res.text).toContain('<div id="root">');
   });
 
-  it('still rejects an unrecognized Origin on /api routes', async () => {
+  it('does not grant CORS access to an unrecognized Origin on /api routes', async () => {
+    // Standard CORS semantics: the server still processes the request (a
+    // real browser is what refuses to let cross-origin JS read the
+    // response), it just omits the Access-Control-Allow-Origin header that
+    // would let a browser's fetch() expose the response to that origin.
     const res = await request(app)
       .get('/api/health')
       .set('Origin', 'http://evil.example.com');
-    expect(res.status).toBe(500);
+    expect(res.status).toBe(200);
+    expect(res.headers['access-control-allow-origin']).toBeUndefined();
+  });
+
+  it('grants CORS access to /api routes when Origin matches the request\'s own host (same-origin)', async () => {
+    // The SPA calling its own /api from wherever it's actually being served
+    // (e.g. the packaged app hitting 127.0.0.1 on whatever port) must work
+    // regardless of port, not just the hardcoded dev-server origin.
+    const res = await request(app)
+      .get('/api/health')
+      .set('Origin', 'http://127.0.0.1:3001')
+      .set('Host', '127.0.0.1:3001');
+    expect(res.status).toBe(200);
+    expect(res.headers['access-control-allow-origin']).toBe('http://127.0.0.1:3001');
+  });
+
+  it('still grants CORS access to the known Vite dev server origin', async () => {
+    const res = await request(app)
+      .get('/api/health')
+      .set('Origin', 'http://localhost:5173');
+    expect(res.status).toBe(200);
+    expect(res.headers['access-control-allow-origin']).toBe('http://localhost:5173');
   });
 });
