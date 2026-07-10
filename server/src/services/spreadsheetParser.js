@@ -41,6 +41,16 @@ function isCsv(originalName, buffer) {
   return !(buffer[0] === 0x50 && buffer[1] === 0x4b);
 }
 
+// Note: workbook.xlsx.load() decompresses and fully parses the whole
+// archive into memory before this function ever sees a single row, so
+// bailing out of eachRow() below only bounds the cost of *our own*
+// row-mapping, not ExcelJS's internal parse - a highly compressible
+// "zip bomb" .xlsx would already have paid that cost by the time we get
+// here. Closing that gap fully would mean switching to ExcelJS's streaming
+// reader (ExcelJS.stream.xlsx.WorkbookReader), which is a larger rewrite
+// of this function; out of scope for this pass. The multer fileFilter in
+// contacts.js at least rejects non-.xlsx/.csv uploads before any of this
+// runs.
 async function parseXlsx(buffer) {
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.load(buffer);
@@ -51,6 +61,8 @@ async function parseXlsx(buffer) {
   let columns = [];
 
   worksheet.eachRow((row, rowNumber) => {
+    if (rows.length > MAX_ROWS) return;
+
     const values = row.values.slice(1).map((v) => {
       if (v && typeof v === 'object' && 'text' in v) return v.text;
       if (v && typeof v === 'object' && v.result !== undefined) return v.result;

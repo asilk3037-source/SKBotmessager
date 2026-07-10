@@ -5,13 +5,32 @@ import db from '../db/index.js';
 import { parseSpreadsheet, normalizePhone, normalizeEmail } from '../services/spreadsheetParser.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (!/\.(xlsx|csv)$/i.test(file.originalname)) {
+      return cb(new Error('Apenas arquivos .xlsx ou .csv são aceitos.'));
+    }
+    cb(null, true);
+  }
+});
 const UNSAFE_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 
 const router = Router();
 
+// Wraps upload.single() so a rejected file (wrong extension, over the size
+// limit) becomes a clear 400 instead of falling through to the generic
+// error handler as a 500.
+function uploadSpreadsheet(req, res, next) {
+  upload.single('file')(req, res, (err) => {
+    if (err) return res.status(400).json({ error: err.message });
+    next();
+  });
+}
+
 // Step 1: upload a spreadsheet and get back a preview (columns + rows) without persisting yet
-router.post('/preview', upload.single('file'), async (req, res) => {
+router.post('/preview', uploadSpreadsheet, async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: 'Nenhum arquivo enviado.' });
   }

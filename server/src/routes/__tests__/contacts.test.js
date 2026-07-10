@@ -31,6 +31,15 @@ describe('POST /api/contacts/preview', () => {
     expect(res.body.suggestedEmailColumn).toBe('Email');
   });
 
+  it('rejects a file whose extension is not .xlsx or .csv', async () => {
+    const res = await request(app)
+      .post('/api/contacts/preview')
+      .attach('file', Buffer.from('not a spreadsheet'), 'contatos.pdf');
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/apenas arquivos \.xlsx ou \.csv/i);
+  });
+
   it('returns 400 with a clear message when the file cannot be parsed as XLSX', async () => {
     // Starts with the zip signature ("PK") so it's routed to the XLSX parser, but isn't a real
     // XLSX archive, so ExcelJS should throw while loading it.

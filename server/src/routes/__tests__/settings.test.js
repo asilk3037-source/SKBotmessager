@@ -125,4 +125,18 @@ describe('PUT /api/settings', () => {
 
     expect(db.data.settings.sms.authToken).toBe('new-token');
   });
+
+  it('encrypts secrets in the persisted snapshot while keeping db.data plaintext in memory', async () => {
+    await request(app)
+      .put('/api/settings')
+      .send({ sms: { provider: 'twilio', authToken: 'plaintext-in-memory' } });
+
+    // In-memory state used by the rest of the app (routes, SMS providers)
+    // stays plaintext - only what actually gets persisted is encrypted.
+    expect(db.data.settings.sms.authToken).toBe('plaintext-in-memory');
+
+    const persisted = await db.adapter.read();
+    expect(persisted.settings.sms.authToken).not.toBe('plaintext-in-memory');
+    expect(persisted.settings.sms.authToken.startsWith('enc:v1:')).toBe(true);
+  });
 });
