@@ -115,6 +115,11 @@ describe('api.* URL/method construction', () => {
     expect(fetch.mock.calls[0][0]).toBe('/api/campaigns/c1');
   });
 
+  it('reportDashboard fetches the dashboard aggregation endpoint', async () => {
+    await api.reportDashboard();
+    expect(fetch.mock.calls[0][0]).toBe('/api/reports/dashboard');
+  });
+
   it('createCampaign posts to /campaigns', async () => {
     await api.createCampaign({ name: 'X' });
     const [url, options] = fetch.mock.calls[0];

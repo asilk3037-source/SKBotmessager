@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Routes, Route, NavLink, Navigate, useLocation } from 'react-router-dom';
 import TitleBar from './components/TitleBar.jsx';
 import { useTheme } from './hooks/useTheme.js';
+import DashboardPage from './pages/DashboardPage.jsx';
 import UploadPage from './pages/UploadPage.jsx';
 import ContatosPage from './pages/ContatosPage.jsx';
 import TemplatesPage from './pages/TemplatesPage.jsx';
@@ -18,6 +19,7 @@ function Icon({ path }) {
 }
 
 const NAV_ITEMS = [
+  { to: '/dashboard', label: 'Dashboard', icon: 'M4 20V10m6 10V4m6 16v-7' },
   { to: '/upload', label: 'Importar planilha', icon: 'M12 16V4m0 0-4 4m4-4 4 4M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3' },
   { to: '/contatos', label: 'Contatos', icon: 'M16 11a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm-8 9v-1a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v1M6 10a3 3 0 1 0-3-3M3 20v-1a4 4 0 0 1 3-3.87' },
   { to: '/templates', label: 'Mensagens padrão', icon: 'M4 5h16v11H8l-4 4V5Z' },
@@ -91,14 +93,15 @@ export default function App() {
         <main className="main">
           <div key={location.pathname} className="page-transition">
             <Routes>
-              <Route path="/" element={<Navigate to="/upload" replace />} />
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/upload" element={<UploadPage />} />
               <Route path="/contatos" element={<ContatosPage />} />
               <Route path="/templates" element={<TemplatesPage />} />
               <Route path="/disparo" element={<DisparoPage />} />
               <Route path="/relatorios" element={<RelatoriosPage />} />
               <Route path="/configuracoes" element={<ConfiguracoesPage />} />
-              <Route path="*" element={<Navigate to="/upload" replace />} />
+              <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Routes>
           </div>
         </main>

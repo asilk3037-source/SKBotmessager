@@ -6,6 +6,7 @@ import App from '../App.jsx';
 
 // Route to lightweight stubs so this test only exercises layout/navigation,
 // not each page's own data loading.
+vi.mock('../pages/DashboardPage.jsx', () => ({ default: () => <div>Tela: Dashboard</div> }));
 vi.mock('../pages/UploadPage.jsx', () => ({ default: () => <div>Tela: Upload</div> }));
 vi.mock('../pages/ContatosPage.jsx', () => ({ default: () => <div>Tela: Contatos</div> }));
 vi.mock('../pages/TemplatesPage.jsx', () => ({ default: () => <div>Tela: Templates</div> }));
@@ -27,9 +28,9 @@ describe('App', () => {
     expect(screen.getByText('SKBotmessager')).toBeInTheDocument();
   });
 
-  it('redirects the root path to /upload', () => {
+  it('redirects the root path to /dashboard', () => {
     renderAt('/');
-    expect(screen.getByText('Tela: Upload')).toBeInTheDocument();
+    expect(screen.getByText('Tela: Dashboard')).toBeInTheDocument();
   });
 
   it('renders the matching page for each nav route', () => {

@@ -37,6 +37,77 @@ router.get('/summary', (req, res) => {
   res.json({ totals, campaigns: [...campaigns].sort((a, b) => b.createdAt.localeCompare(a.createdAt)) });
 });
 
+const TREND_DAYS = 14;
+const CHANNELS = ['whatsapp', 'sms', 'email'];
+
+function dayKey(isoString) {
+  return isoString.slice(0, 10); // "2025-01-01T10:00:00.000Z" -> "2025-01-01"
+}
+
+router.get('/dashboard', (req, res) => {
+  const messages = db.data.messages;
+  const campaigns = db.data.campaigns;
+
+  const messagesSent = messages.filter((m) => m.status === 'sent').length;
+  const messagesFailed = messages.filter((m) => m.status === 'failed').length;
+  const messagesPending = messages.filter((m) => m.status === 'pending').length;
+  const totals = {
+    campaigns: campaigns.length,
+    messagesSent,
+    messagesFailed,
+    messagesPending,
+    messagesTotal: messages.length
+  };
+
+  const delivered = messagesSent + messagesFailed;
+  const deliveryRate = delivered > 0 ? Math.round((messagesSent / delivered) * 1000) / 10 : null;
+
+  const byChannel = CHANNELS.map((channel) => {
+    const channelMessages = messages.filter((m) => m.channel === channel);
+    return {
+      channel,
+      sent: channelMessages.filter((m) => m.status === 'sent').length,
+      failed: channelMessages.filter((m) => m.status === 'failed').length,
+      pending: channelMessages.filter((m) => m.status === 'pending').length,
+      total: channelMessages.length
+    };
+  }).filter((c) => c.total > 0);
+
+  // Last TREND_DAYS calendar days (UTC), oldest first, zero-filled so the
+  // chart always has a continuous x-axis even on days with no activity.
+  const today = new Date();
+  const trendByDay = new Map();
+  for (let i = TREND_DAYS - 1; i >= 0; i -= 1) {
+    const d = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate() - i));
+    trendByDay.set(d.toISOString().slice(0, 10), { date: d.toISOString().slice(0, 10), sent: 0, failed: 0 });
+  }
+  for (const m of messages) {
+    const bucket = trendByDay.get(dayKey(m.createdAt));
+    if (!bucket) continue; // outside the trend window
+    if (m.status === 'sent') bucket.sent += 1;
+    else if (m.status === 'failed') bucket.failed += 1;
+  }
+  const trend = [...trendByDay.values()];
+
+  const recentCampaigns = [...campaigns]
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    .slice(0, 5)
+    .map((c) => {
+      const campaignMessages = messages.filter((m) => m.campaignId === c.id);
+      return {
+        id: c.id,
+        name: c.name,
+        status: c.status,
+        createdAt: c.createdAt,
+        sent: campaignMessages.filter((m) => m.status === 'sent').length,
+        failed: campaignMessages.filter((m) => m.status === 'failed').length,
+        total: campaignMessages.length
+      };
+    });
+
+  res.json({ totals, deliveryRate, byChannel, trend, recentCampaigns });
+});
+
 const CSV_HEADERS = ['data', 'campanha', 'contato', 'destinatario', 'canal', 'status', 'erro', 'assunto', 'mensagem'];
 
 // Prefix values that would otherwise open as a formula in Excel/Sheets

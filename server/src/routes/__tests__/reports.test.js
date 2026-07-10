@@ -102,6 +102,69 @@ describe('GET /api/reports/summary', () => {
   });
 });
 
+describe('GET /api/reports/dashboard', () => {
+  it('aggregates totals, delivery rate, per-channel and recent campaign stats', async () => {
+    const res = await request(app).get('/api/reports/dashboard');
+
+    expect(res.status).toBe(200);
+    expect(res.body.totals).toEqual({
+      campaigns: 1,
+      messagesSent: 1,
+      messagesFailed: 1,
+      messagesPending: 0,
+      messagesTotal: 2
+    });
+    expect(res.body.deliveryRate).toBe(50); // 1 sent / (1 sent + 1 failed)
+
+    expect(res.body.byChannel).toEqual(
+      expect.arrayContaining([
+        { channel: 'sms', sent: 1, failed: 0, pending: 0, total: 1 },
+        { channel: 'email', sent: 0, failed: 1, pending: 0, total: 1 }
+      ])
+    );
+    // whatsapp has no messages in this fixture, so it's omitted rather than a zero row
+    expect(res.body.byChannel.find((c) => c.channel === 'whatsapp')).toBeUndefined();
+
+    expect(res.body.recentCampaigns).toHaveLength(1);
+    expect(res.body.recentCampaigns[0]).toMatchObject({ id: 'camp-1', name: 'Campanha A', sent: 1, failed: 1, total: 2 });
+  });
+
+  it('returns a null delivery rate and zero-filled trend when there is no data', async () => {
+    db.data.messages = [];
+    db.data.campaigns = [];
+
+    const res = await request(app).get('/api/reports/dashboard');
+
+    expect(res.body.deliveryRate).toBeNull();
+    expect(res.body.byChannel).toEqual([]);
+    expect(res.body.trend).toHaveLength(14);
+    expect(res.body.trend.every((day) => day.sent === 0 && day.failed === 0)).toBe(true);
+    expect(res.body.recentCampaigns).toEqual([]);
+  });
+
+  it('buckets a message sent today into the last day of the trend', async () => {
+    const today = new Date().toISOString();
+    db.data.messages.push({
+      id: 'm-today',
+      campaignId: 'camp-1',
+      contactName: 'Ana',
+      recipient: '11999998888',
+      channel: 'whatsapp',
+      status: 'sent',
+      error: null,
+      subject: '',
+      content: 'Oi',
+      createdAt: today
+    });
+
+    const res = await request(app).get('/api/reports/dashboard');
+    const lastDay = res.body.trend[res.body.trend.length - 1];
+
+    expect(lastDay.date).toBe(today.slice(0, 10));
+    expect(lastDay.sent).toBe(1);
+  });
+});
+
 describe('GET /api/reports/export.csv', () => {
   it('returns a UTF-8 CSV with a BOM, correct headers and escaped content', async () => {
     const res = await request(app).get('/api/reports/export.csv');

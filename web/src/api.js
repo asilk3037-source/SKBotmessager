@@ -58,6 +58,7 @@ export const api = {
     return request(`/reports/messages${qs ? `?${qs}` : ''}`);
   },
   reportSummary: () => request('/reports/summary'),
+  reportDashboard: () => request('/reports/dashboard'),
   exportCsvUrl: (params = {}) => {
     const qs = new URLSearchParams(params).toString();
     return `${BASE}/reports/export.csv${qs ? `?${qs}` : ''}`;
