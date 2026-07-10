@@ -372,6 +372,14 @@ tr.row-warning td:first-child { box-shadow: inset 3px 0 0 var(--warning); }
   text-align: center;
   padding: 44px 20px;
   color: var(--text-muted);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.empty-state-icon {
+  color: var(--border);
 }
 
 .dropzone {
@@ -674,3 +682,142 @@ tr.row-warning td:first-child { box-shadow: inset 3px 0 0 var(--warning); }
   .toolbar .row { max-width: none !important; }
   .card { padding: 16px; }
 }
+
+/* Skeleton loading placeholders */
+.skeleton {
+  background: linear-gradient(90deg, #eef0ee 25%, #e2e6e3 37%, #eef0ee 63%);
+  background-size: 400% 100%;
+  animation: skeleton-shimmer 1.4s ease infinite;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+@keyframes skeleton-shimmer {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
+}
+
+.skeleton-text { height: 13px; width: 100%; }
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.skeleton-title { height: 20px; width: 40%; margin-bottom: 4px; }
+
+.skeleton-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.skeleton-stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 17px;
+  box-shadow: var(--shadow-sm);
+}
+
+.skeleton-stat-card .skeleton { height: 25px; width: 60%; margin-bottom: 8px; }
+.skeleton-stat-card .skeleton:last-child { height: 12px; width: 80%; margin-bottom: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton { animation: none; }
+}
+
+/* Wizard step indicator (Disparo em massa) */
+.stepper {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 20px;
+  padding: 4px 6px;
+}
+
+.stepper-step {
+  display: flex;
+  align-items: center;
+  flex: 1;
+}
+
+.stepper-step:last-child { flex: 0; }
+
+.stepper-dot {
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+
+.stepper-dot.done { background: var(--primary); border-color: var(--primary); color: white; }
+.stepper-dot.current { border-color: var(--primary); color: var(--primary); box-shadow: 0 0 0 3px var(--primary-light); }
+
+.stepper-label {
+  margin-left: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.stepper-line {
+  flex: 1;
+  height: 2px;
+  background: var(--border);
+  margin: 0 10px;
+  transition: background 0.2s;
+}
+
+.stepper-line.done { background: var(--primary); }
+
+@media (max-width: 700px) {
+  .stepper-label { display: none; }
+}
+
+/* Lightweight CSS-only tooltip: add data-tooltip="..." to any element */
+[data-tooltip] { position: relative; }
+
+[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  background: #1a1d29;
+  color: white;
+  padding: 5px 9px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.12s, transform 0.12s;
+  z-index: 250;
+}
+
+[data-tooltip]:hover::after, [data-tooltip]:focus-visible::after {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(8px);
+}
+
+.titlebar [data-tooltip]::after { top: 100%; }

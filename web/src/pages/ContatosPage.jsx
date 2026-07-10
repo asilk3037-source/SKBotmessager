@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { api } from '../api.js';
 import ConfirmDialog from '../components/ConfirmDialog.jsx';
 import Pagination from '../components/Pagination.jsx';
+import TableSkeleton from '../components/TableSkeleton.jsx';
+import EmptyState from '../components/EmptyState.jsx';
 import { useToast } from '../components/ToastProvider.jsx';
 
 const PAGE_SIZE = 50;
@@ -106,8 +108,10 @@ export default function ContatosPage() {
       {error && <div className="alert alert-error">{error}</div>}
 
       {batches.length === 0 && !loading ? (
-        <div className="card empty-state">
-          Nenhum contato importado ainda. <Link to="/upload">Importe uma planilha</Link> para começar.
+        <div className="card">
+          <EmptyState icon="M12 16V4m0 0-4 4m4-4 4 4M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3">
+            Nenhum contato importado ainda. <Link to="/upload">Importe uma planilha</Link> para começar.
+          </EmptyState>
         </div>
       ) : (
         <>
@@ -121,7 +125,7 @@ export default function ContatosPage() {
                   <th>Importados</th>
                   <th>Ignorados</th>
                   <th>Data</th>
-                  <th aria-label="Ações"></th>
+                  <th aria-label="Ações" data-tooltip="Ações"></th>
                 </tr>
               </thead>
               <tbody>
@@ -164,8 +168,15 @@ export default function ContatosPage() {
               </div>
             </div>
 
-            {contacts.length === 0 ? (
-              <div className="empty-state">Nenhum contato encontrado.</div>
+            {loading && contacts.length === 0 ? (
+              <>
+                <span className="sr-only">Carregando...</span>
+                <TableSkeleton rows={6} columns={5} />
+              </>
+            ) : contacts.length === 0 ? (
+              <EmptyState icon="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14Zm10 17-5.6-5.6">
+                Nenhum contato encontrado.
+              </EmptyState>
             ) : (
               <div className="table-scroll">
               <table>
@@ -175,7 +186,7 @@ export default function ContatosPage() {
                     <th>Telefone</th>
                     <th>Email</th>
                     <th>Dados extras</th>
-                    <th aria-label="Ações"></th>
+                    <th aria-label="Ações" data-tooltip="Ações"></th>
                   </tr>
                 </thead>
                 <tbody>

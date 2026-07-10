@@ -23,6 +23,7 @@ export default function TitleBar() {
           type="button"
           className="titlebar-btn"
           aria-label="Minimizar"
+          data-tooltip="Minimizar"
           onClick={() => electronAPI.minimize()}
         >
           <svg width="10" height="10" viewBox="0 0 10 10">
@@ -33,6 +34,7 @@ export default function TitleBar() {
           type="button"
           className="titlebar-btn"
           aria-label={isMaximized ? 'Restaurar' : 'Maximizar'}
+          data-tooltip={isMaximized ? 'Restaurar' : 'Maximizar'}
           onClick={() => electronAPI.toggleMaximize()}
         >
           {isMaximized ? (
@@ -50,6 +52,7 @@ export default function TitleBar() {
           type="button"
           className="titlebar-btn titlebar-btn-close"
           aria-label="Fechar"
+          data-tooltip="Fechar"
           onClick={() => electronAPI.close()}
         >
           <svg width="10" height="10" viewBox="0 0 10 10">

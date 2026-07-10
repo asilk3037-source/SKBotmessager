@@ -3,6 +3,7 @@ import { api } from '../api.js';
 import { CHANNEL_LABELS } from '../constants.js';
 import ConfirmDialog from '../components/ConfirmDialog.jsx';
 import { useToast } from '../components/ToastProvider.jsx';
+import EmptyState from '../components/EmptyState.jsx';
 
 const EMPTY_FORM = { id: null, name: '', content: '', subject: '', channel: 'any', isDefault: false };
 
@@ -171,7 +172,9 @@ export default function TemplatesPage() {
       <div className="card">
         <h3>Templates salvos</h3>
         {templates.length === 0 ? (
-          <div className="empty-state">Nenhum template criado ainda.</div>
+          <EmptyState icon="M4 5h16v11H8l-4 4V5Z">
+            Nenhum template criado ainda.
+          </EmptyState>
         ) : (
           <div className="table-scroll">
           <table>
@@ -181,7 +184,7 @@ export default function TemplatesPage() {
                 <th>Canal</th>
                 <th>Mensagem</th>
                 <th>Padrão</th>
-                <th aria-label="Ações"></th>
+                <th aria-label="Ações" data-tooltip="Ações"></th>
               </tr>
             </thead>
             <tbody>

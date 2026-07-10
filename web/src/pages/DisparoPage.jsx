@@ -18,6 +18,24 @@ function getRecipient(channel, contact) {
   return channel === 'email' ? contact.email : contact.phone;
 }
 
+const STEP_LABELS = ['Lote', 'Contatos', 'Canal e mensagem', 'Pré-visualização'];
+
+function Stepper({ currentIndex }) {
+  return (
+    <div className="stepper" aria-hidden="true">
+      {STEP_LABELS.map((label, i) => (
+        <div key={label} className="stepper-step">
+          <div className={`stepper-dot${i < currentIndex ? ' done' : ''}${i === currentIndex ? ' current' : ''}`}>
+            {i < currentIndex ? '✓' : i + 1}
+          </div>
+          <span className="stepper-label">{label}</span>
+          {i < STEP_LABELS.length - 1 && <div className={`stepper-line${i < currentIndex ? ' done' : ''}`} />}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function DisparoPage() {
   const [batches, setBatches] = useState([]);
   const [templates, setTemplates] = useState([]);
@@ -70,6 +88,13 @@ export default function DisparoPage() {
   const selectedTemplate = templates.find((t) => t.id === templateId);
   const selectedContacts = contacts.filter((c) => selectedIds.has(c.id));
   const selectedWithoutRecipient = selectedContacts.filter((c) => !getRecipient(channel, c));
+
+  const stepIndex = [
+    Boolean(selectedBatch),
+    contacts.length > 0 && selectedIds.size > 0,
+    Boolean(templateId),
+    Boolean(selectedTemplate) && selectedContacts.length > 0,
+  ].filter(Boolean).length;
 
   function toggleContact(id) {
     setSelectedIds((prev) => {
@@ -169,6 +194,8 @@ export default function DisparoPage() {
       <p className="page-subtitle">Selecione os contatos, escolha o canal e a mensagem, e dispare.</p>
 
       {error && <div className="alert alert-error">{error}</div>}
+
+      <Stepper currentIndex={stepIndex} />
 
       <div className="card">
         <h3>1. Escolha o lote de contatos</h3>

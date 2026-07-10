@@ -2,6 +2,8 @@ import { useEffect, useState, useCallback } from 'react';
 import { api } from '../api.js';
 import { CHANNEL_LABELS } from '../constants.js';
 import Pagination from '../components/Pagination.jsx';
+import TableSkeleton from '../components/TableSkeleton.jsx';
+import EmptyState from '../components/EmptyState.jsx';
 
 const STATUS_BADGE = {
   sent: <span className="badge badge-success">Enviada</span>,
@@ -52,7 +54,7 @@ export default function RelatoriosPage() {
 
       {error && <div className="alert alert-error">{error}</div>}
 
-      {summary && (
+      {summary ? (
         <div className="stat-grid">
           <div className="stat-card">
             <div className="stat-value">{summary.totals.campaigns}</div>
@@ -70,6 +72,15 @@ export default function RelatoriosPage() {
             <div className="stat-value">{summary.totals.messagesTotal}</div>
             <div className="stat-label">Total processado</div>
           </div>
+        </div>
+      ) : loading && (
+        <div className="skeleton-stat-grid" aria-hidden="true">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="skeleton-stat-card">
+              <div className="skeleton" />
+              <div className="skeleton" />
+            </div>
+          ))}
         </div>
       )}
 
@@ -101,9 +112,14 @@ export default function RelatoriosPage() {
         </div>
 
         {loading ? (
-          <p className="helper-text">Carregando...</p>
+          <>
+            <span className="sr-only">Carregando...</span>
+            <TableSkeleton rows={6} columns={6} />
+          </>
         ) : messages.length === 0 ? (
-          <div className="empty-state">Nenhum envio encontrado com esses filtros.</div>
+          <EmptyState icon="M4 20V10m6 10V4m6 16v-7">
+            Nenhum envio encontrado com esses filtros.
+          </EmptyState>
         ) : (
           <div className="table-scroll">
             <table>

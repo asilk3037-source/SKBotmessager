@@ -88,7 +88,7 @@ describe('DisparoPage - setup', () => {
     renderPage();
     await selectBatch();
 
-    await waitFor(() => expect(screen.getByText(/pré-visualização/i)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole('heading', { name: /pré-visualização/i })).toBeInTheDocument());
     expect(screen.getByText('Oi Joao')).toBeInTheDocument();
     expect(screen.getByText('Oi Maria')).toBeInTheDocument();
   });
@@ -120,7 +120,7 @@ describe('DisparoPage - setup', () => {
     await userEvent.click(screen.getByRole('button', { name: /desmarcar todos/i }));
 
     expect(screen.getByText(/selecione os contatos \(0 de 2\)/i)).toBeInTheDocument();
-    expect(screen.queryByText(/pré-visualização/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /pré-visualização/i })).not.toBeInTheDocument();
   });
 });
 
@@ -128,7 +128,7 @@ describe('DisparoPage - dispatch and progress', () => {
   async function setupReadyToDispatch() {
     renderPage();
     await selectBatch();
-    await waitFor(() => screen.getByText(/pré-visualização/i));
+    await waitFor(() => screen.getByRole('heading', { name: /pré-visualização/i }));
   }
 
   it('starts a campaign and shows the "em andamento" progress screen', async () => {
