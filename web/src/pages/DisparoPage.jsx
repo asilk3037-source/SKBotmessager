@@ -2,17 +2,7 @@ import { useEffect, useMemo, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api.js';
 import { CHANNEL_LABELS } from '../constants.js';
-
-function renderPreview(content, contact) {
-  return content.replace(/\{\{\s*([\w.]+)\s*\}\}/g, (match, rawKey) => {
-    const key = rawKey.trim().toLowerCase();
-    if (key === 'nome') return contact.name ?? '';
-    if (key === 'telefone') return contact.phone ?? '';
-    const extraKey = Object.keys(contact.extras || {}).find((k) => k.toLowerCase() === key);
-    if (extraKey) return String(contact.extras[extraKey] ?? '');
-    return match;
-  });
-}
+import { renderPreview } from '../utils/renderPreview.js';
 
 function getRecipient(channel, contact) {
   return channel === 'email' ? contact.email : contact.phone;

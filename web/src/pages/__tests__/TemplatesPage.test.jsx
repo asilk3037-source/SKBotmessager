@@ -10,7 +10,8 @@ vi.mock('../../api.js', () => ({
     listTemplates: vi.fn(),
     createTemplate: vi.fn(),
     updateTemplate: vi.fn(),
-    deleteTemplate: vi.fn()
+    deleteTemplate: vi.fn(),
+    listContacts: vi.fn()
   }
 }));
 
@@ -26,6 +27,7 @@ const TEMPLATE = {
 beforeEach(() => {
   vi.clearAllMocks();
   api.listTemplates.mockResolvedValue([]);
+  api.listContacts.mockResolvedValue({ total: 0, contacts: [] });
 });
 
 describe('TemplatesPage', () => {
@@ -167,5 +169,39 @@ describe('TemplatesPage', () => {
 
     // "Padrão" also names the table column header, so scope to the badge element itself.
     await waitFor(() => expect(container.querySelector('.badge-success')).toHaveTextContent('Padrão'));
+  });
+
+  it('fills the form from a starter template when clicked', async () => {
+    render(<TemplatesPage />);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Boas-vindas' }));
+
+    expect(screen.getByLabelText(/^mensagem$/i)).toHaveValue(
+      'Olá {{nome}}, seja bem-vindo(a)! Estamos felizes em ter você com a gente.'
+    );
+    expect(screen.getByLabelText(/assunto do email/i)).toHaveValue('Bem-vindo(a)!');
+    expect(screen.getByRole('heading', { name: /novo template/i })).toBeInTheDocument();
+  });
+
+  it('shows a live preview of the message rendered with a placeholder contact when no contacts exist', async () => {
+    render(<TemplatesPage />);
+
+    await waitFor(() => expect(screen.getByText(/nenhum contato importado ainda/i)).toBeInTheDocument());
+
+    // user-event's .type() treats "{" as special-key syntax (needs doubling per literal brace).
+    await userEvent.type(screen.getByLabelText(/^mensagem$/i), 'Oi {{{{nome}}!');
+    expect(screen.getByText('Oi Maria Exemplo!')).toBeInTheDocument();
+  });
+
+  it('renders the preview with a real imported contact when one is available', async () => {
+    api.listContacts.mockResolvedValue({
+      total: 1,
+      contacts: [{ id: 'c1', name: 'Joao Real', phone: '11988887777', extras: {} }]
+    });
+    render(<TemplatesPage />);
+
+    // user-event's .type() treats "{" as special-key syntax (needs doubling per literal brace).
+    await userEvent.type(screen.getByLabelText(/^mensagem$/i), 'Oi {{{{nome}}!');
+    await waitFor(() => expect(screen.getByText('Oi Joao Real!')).toBeInTheDocument());
   });
 });
