@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { render, screen, waitFor, within, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import DisparoPage from '../DisparoPage.jsx';
@@ -10,7 +10,9 @@ vi.mock('../../api.js', () => ({
     listBatches: vi.fn(),
     listTemplates: vi.fn(),
     listContacts: vi.fn(),
+    listCampaigns: vi.fn(),
     createCampaign: vi.fn(),
+    cancelCampaign: vi.fn(),
     getCampaign: vi.fn()
   }
 }));
@@ -41,6 +43,7 @@ beforeEach(() => {
   api.listBatches.mockResolvedValue([BATCH]);
   api.listTemplates.mockResolvedValue([WA_TEMPLATE, EMAIL_TEMPLATE]);
   api.listContacts.mockResolvedValue({ total: 2, contacts: [CONTACT_1, CONTACT_NO_EMAIL] });
+  api.listCampaigns.mockResolvedValue([]);
 });
 
 afterEach(() => {
@@ -216,5 +219,72 @@ describe('DisparoPage - dispatch and progress', () => {
     await userEvent.click(screen.getByRole('button', { name: /novo disparo/i }));
 
     expect(screen.getByText(/1\. escolha o lote de contatos/i)).toBeInTheDocument();
+  });
+});
+
+describe('DisparoPage - scheduling', () => {
+  async function setupReadyToDispatch() {
+    render(
+      <MemoryRouter>
+        <DisparoPage />
+      </MemoryRouter>
+    );
+    await selectBatch();
+    await waitFor(() => screen.getByRole('heading', { name: /pré-visualização/i }));
+  }
+
+  it('shows the scheduled-for input and disables dispatch until a date is chosen', async () => {
+    await setupReadyToDispatch();
+
+    await userEvent.selectOptions(screen.getByLabelText(/quando enviar/i), 'schedule');
+
+    const dispatchButton = screen.getByRole('button', { name: /agendar disparo para 2 contato/i });
+    expect(dispatchButton).toBeDisabled();
+
+    fireEvent.change(screen.getByLabelText(/data e hora do envio/i), { target: { value: '2099-01-01T10:00' } });
+    expect(dispatchButton).toBeEnabled();
+  });
+
+  it('schedules a campaign and shows the "agendado" confirmation with a cancel action', async () => {
+    api.createCampaign.mockResolvedValue({
+      id: 'camp-1',
+      name: 'Disparo teste',
+      status: 'scheduled',
+      scheduledAt: '2099-01-01T10:00:00.000Z',
+      totalCount: 2
+    });
+
+    await setupReadyToDispatch();
+    await userEvent.selectOptions(screen.getByLabelText(/quando enviar/i), 'schedule');
+    fireEvent.change(screen.getByLabelText(/data e hora do envio/i), { target: { value: '2099-01-01T10:00' } });
+    await userEvent.click(screen.getByRole('button', { name: /agendar disparo para 2 contato/i }));
+
+    await waitFor(() => expect(screen.getByText(/disparo agendado/i)).toBeInTheDocument());
+    expect(api.createCampaign).toHaveBeenCalledWith(
+      expect.objectContaining({ scheduledAt: expect.stringContaining('2099-01-01') })
+    );
+
+    await userEvent.click(screen.getByRole('button', { name: /cancelar agendamento/i }));
+    await waitFor(() => expect(api.cancelCampaign).toHaveBeenCalledWith('camp-1'));
+    expect(screen.getByText(/1\. escolha o lote de contatos/i)).toBeInTheDocument();
+  });
+
+  it('lists existing scheduled campaigns with a cancel button', async () => {
+    api.listCampaigns.mockResolvedValue([
+      { id: 'sched-1', name: 'Campanha futura', status: 'scheduled', scheduledAt: '2099-01-01T10:00:00.000Z', totalCount: 5 },
+      { id: 'run-1', name: 'Já rodando', status: 'running', totalCount: 3 }
+    ]);
+
+    render(
+      <MemoryRouter>
+        <DisparoPage />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => expect(screen.getByText('Campanha futura')).toBeInTheDocument());
+    expect(screen.queryByText('Já rodando')).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: /cancelar/i }));
+    await waitFor(() => expect(api.cancelCampaign).toHaveBeenCalledWith('sched-1'));
   });
 });

@@ -51,6 +51,7 @@ export const api = {
   listCampaigns: () => request('/campaigns'),
   getCampaign: (id) => request(`/campaigns/${id}`),
   createCampaign: (payload) => request('/campaigns', { method: 'POST', body: JSON.stringify(payload) }),
+  cancelCampaign: (id) => request(`/campaigns/${id}/cancel`, { method: 'POST' }),
 
   // Reports
   listMessages: (params = {}) => {

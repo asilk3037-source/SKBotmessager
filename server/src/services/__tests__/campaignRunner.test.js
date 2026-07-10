@@ -12,7 +12,8 @@ const sendEmailMock = vi.fn();
 vi.mock('../emailService.js', () => ({ sendEmail: (...args) => sendEmailMock(...args) }));
 
 const db = (await import('../../db/index.js')).default;
-const { runCampaign, startCampaign } = await import('../campaignRunner.js');
+const { runCampaign, startCampaign, scheduleCampaign, cancelScheduledCampaign, runDueScheduledCampaigns } =
+  await import('../campaignRunner.js');
 
 function addContact(overrides = {}) {
   const contact = {
@@ -397,5 +398,108 @@ describe('startCampaign', () => {
     const updated = db.data.campaigns.find((c) => c.id === campaign.id);
     expect(updated.status).toBe('failed');
     expect(updated.error).toMatch(/cannot read prop|null/i);
+  });
+});
+
+describe('scheduleCampaign', () => {
+  it('persists the campaign in "scheduled" state and does not send anything', async () => {
+    const contact = addContact();
+    const template = addTemplate();
+    const scheduledAt = new Date(Date.now() + 60_000).toISOString();
+
+    const campaign = await scheduleCampaign({
+      name: 'Disparo agendado',
+      templateId: template.id,
+      channel: 'sms',
+      contactIds: [contact.id],
+      scheduledAt
+    });
+
+    expect(campaign.status).toBe('scheduled');
+    expect(campaign.scheduledAt).toBe(scheduledAt);
+    expect(campaign.processedCount).toBe(0);
+
+    await new Promise((resolve) => setImmediate(resolve));
+    expect(sendSmsMock).not.toHaveBeenCalled();
+    expect(db.data.messages).toHaveLength(0);
+  });
+});
+
+describe('cancelScheduledCampaign', () => {
+  it('marks a scheduled campaign as cancelled', async () => {
+    db.data.campaigns.push({ id: 'camp-1', status: 'scheduled', scheduledAt: new Date(Date.now() + 60_000).toISOString() });
+
+    const result = await cancelScheduledCampaign('camp-1');
+
+    expect(result.ok).toBe(true);
+    expect(result.campaign.status).toBe('cancelled');
+    expect(db.data.campaigns[0].status).toBe('cancelled');
+  });
+
+  it('refuses to cancel a campaign that is not scheduled', async () => {
+    db.data.campaigns.push({ id: 'camp-1', status: 'running' });
+
+    const result = await cancelScheduledCampaign('camp-1');
+
+    expect(result.ok).toBe(false);
+    expect(result.reason).toBe('not_scheduled');
+    expect(db.data.campaigns[0].status).toBe('running');
+  });
+
+  it('returns not_found for a missing campaign', async () => {
+    const result = await cancelScheduledCampaign('missing');
+    expect(result.ok).toBe(false);
+    expect(result.reason).toBe('not_found');
+  });
+});
+
+describe('runDueScheduledCampaigns', () => {
+  it('starts a scheduled campaign whose time has arrived', async () => {
+    const contact = addContact();
+    const template = addTemplate();
+    sendSmsMock.mockResolvedValue(undefined);
+
+    db.data.campaigns.push({
+      id: 'camp-1',
+      templateId: template.id,
+      channel: 'sms',
+      contactIds: [contact.id],
+      totalCount: 1,
+      processedCount: 0,
+      sentCount: 0,
+      failedCount: 0,
+      status: 'scheduled',
+      scheduledAt: new Date(Date.now() - 1000).toISOString() // already due
+    });
+
+    await runDueScheduledCampaigns();
+    // Flips to "running" synchronously; runCampaign itself is fire-and-forget.
+    expect(db.data.campaigns[0].status).toBe('running');
+
+    await new Promise((resolve) => setImmediate(resolve));
+    await new Promise((resolve) => setImmediate(resolve));
+
+    expect(db.data.campaigns[0].status).toBe('completed');
+    expect(sendSmsMock).toHaveBeenCalled();
+  });
+
+  it('leaves campaigns scheduled for the future untouched', async () => {
+    db.data.campaigns.push({
+      id: 'camp-1',
+      status: 'scheduled',
+      scheduledAt: new Date(Date.now() + 60_000).toISOString()
+    });
+
+    await runDueScheduledCampaigns();
+
+    expect(db.data.campaigns[0].status).toBe('scheduled');
+  });
+
+  it('ignores campaigns that are not in "scheduled" state', async () => {
+    db.data.campaigns.push({ id: 'camp-1', status: 'cancelled', scheduledAt: new Date(Date.now() - 1000).toISOString() });
+
+    await runDueScheduledCampaigns();
+
+    expect(db.data.campaigns[0].status).toBe('cancelled');
   });
 });

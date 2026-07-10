@@ -136,16 +136,19 @@ describe('parseSpreadsheet - XLSX', () => {
 });
 
 describe('parseSpreadsheetInWorker', () => {
+  // Spawning a real worker thread is slower and more load-sensitive than
+  // in-process parsing - give these more headroom than the 5s default so a
+  // busy CI/dev machine doesn't turn slow-but-fine into a flaky failure.
   it('parses a CSV buffer on a worker thread and returns the same shape as parseSpreadsheet', async () => {
     const csv = 'Nome,Telefone\nJoao,11988887777\nMaria,21977776666\n';
     const result = await parseSpreadsheetInWorker(Buffer.from(csv, 'utf8'), 'contatos.csv');
     expect(result.columns).toEqual(['Nome', 'Telefone']);
     expect(result.rows).toHaveLength(2);
     expect(result.suggestedPhoneColumn).toBe('Telefone');
-  });
+  }, 15000);
 
   it('rejects with the original error message when parsing fails', async () => {
     const buffer = Buffer.from([0xd0, 0xcf, 0x11, 0xe0, 0, 0, 0, 0]);
     await expect(parseSpreadsheetInWorker(buffer, 'old.xls')).rejects.toThrow(/xls antigo não suportado/i);
-  });
+  }, 15000);
 });

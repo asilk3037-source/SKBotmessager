@@ -18,6 +18,13 @@ function getRecipient(channel, contact) {
   return channel === 'email' ? contact.email : contact.phone;
 }
 
+// <input type="datetime-local"> needs "YYYY-MM-DDTHH:mm" in local time (no
+// timezone suffix) both to display a value and as a min= floor.
+function toDatetimeLocalValue(date) {
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
 const STEP_LABELS = ['Lote', 'Contatos', 'Canal e mensagem', 'Pré-visualização'];
 
 function Stepper({ currentIndex }) {
@@ -45,14 +52,24 @@ export default function DisparoPage() {
   const [channel, setChannel] = useState('whatsapp');
   const [templateId, setTemplateId] = useState('');
   const [campaignName, setCampaignName] = useState('');
+  const [sendMode, setSendMode] = useState('now');
+  const [scheduledAt, setScheduledAt] = useState('');
   const [error, setError] = useState('');
   const [starting, setStarting] = useState(false);
   const [campaign, setCampaign] = useState(null);
+  const [scheduledCampaigns, setScheduledCampaigns] = useState([]);
   const pollRef = useRef(null);
+
+  function loadScheduledCampaigns() {
+    api.listCampaigns()
+      .then((all) => setScheduledCampaigns(all.filter((c) => c.status === 'scheduled')))
+      .catch((err) => setError(err.message));
+  }
 
   useEffect(() => {
     api.listBatches().then(setBatches).catch((err) => setError(err.message));
     api.listTemplates().then(setTemplates).catch((err) => setError(err.message));
+    loadScheduledCampaigns();
   }, []);
 
   useEffect(() => {
@@ -112,6 +129,10 @@ export default function DisparoPage() {
 
   async function handleStart() {
     if (!templateId || selectedContacts.length === 0) return;
+    if (sendMode === 'schedule' && !scheduledAt) {
+      setError('Escolha a data e hora do agendamento.');
+      return;
+    }
     setError('');
     setStarting(true);
     try {
@@ -120,12 +141,25 @@ export default function DisparoPage() {
         templateId,
         channel,
         contactIds: [...selectedIds],
+        ...(sendMode === 'schedule' ? { scheduledAt: new Date(scheduledAt).toISOString() } : {}),
       });
       setCampaign(created);
+      if (created.status === 'scheduled') loadScheduledCampaigns();
     } catch (err) {
       setError(err.message);
     } finally {
       setStarting(false);
+    }
+  }
+
+  async function handleCancelScheduled(id) {
+    setError('');
+    try {
+      await api.cancelCampaign(id);
+      if (campaign?.id === id) setCampaign(null);
+      loadScheduledCampaigns();
+    } catch (err) {
+      setError(err.message);
     }
   }
 
@@ -145,6 +179,30 @@ export default function DisparoPage() {
     }, 1500);
     return () => clearInterval(pollRef.current);
   }, [campaign?.id, campaign?.status]);
+
+  if (campaign && campaign.status === 'scheduled') {
+    return (
+      <div>
+        <h1 className="page-title">Disparo agendado</h1>
+        {error && <div className="alert alert-error">{error}</div>}
+        <div className="card">
+          <h3>{campaign.name}</h3>
+          <p>
+            Agendado para <strong>{new Date(campaign.scheduledAt).toLocaleString('pt-BR')}</strong>.
+          </p>
+          <p className="helper-text">
+            {campaign.totalCount} contato(s) serão processados automaticamente nesse horário. O app precisa estar aberto no momento do envio (ou é retomado assim que reaberto, caso tenha ficado fechado).
+          </p>
+          <div className="toolbar">
+            <button className="btn btn-danger" onClick={() => handleCancelScheduled(campaign.id)}>
+              Cancelar agendamento
+            </button>
+            <button className="btn btn-secondary" onClick={() => setCampaign(null)}>Novo disparo</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (campaign) {
     const pct = campaign.totalCount ? Math.round((campaign.processedCount / campaign.totalCount) * 100) : 0;
@@ -194,6 +252,38 @@ export default function DisparoPage() {
       <p className="page-subtitle">Selecione os contatos, escolha o canal e a mensagem, e dispare.</p>
 
       {error && <div className="alert alert-error">{error}</div>}
+
+      {scheduledCampaigns.length > 0 && (
+        <div className="card">
+          <h3>Disparos agendados</h3>
+          <div className="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Campanha</th>
+                  <th>Agendado para</th>
+                  <th>Contatos</th>
+                  <th aria-label="Ações" data-tooltip="Ações"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {scheduledCampaigns.map((c) => (
+                  <tr key={c.id}>
+                    <td>{c.name}</td>
+                    <td>{new Date(c.scheduledAt).toLocaleString('pt-BR')}</td>
+                    <td>{c.totalCount}</td>
+                    <td>
+                      <button className="btn btn-danger btn-sm" onClick={() => handleCancelScheduled(c.id)}>
+                        Cancelar
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       <Stepper currentIndex={stepIndex} />
 
@@ -278,6 +368,25 @@ export default function DisparoPage() {
               onChange={(e) => setCampaignName(e.target.value)}
             />
           </div>
+          <div className="field">
+            <label htmlFor="send-mode">Quando enviar</label>
+            <select id="send-mode" value={sendMode} onChange={(e) => setSendMode(e.target.value)}>
+              <option value="now">Agora</option>
+              <option value="schedule">Agendar para depois</option>
+            </select>
+          </div>
+          {sendMode === 'schedule' && (
+            <div className="field">
+              <label htmlFor="scheduled-at">Data e hora do envio</label>
+              <input
+                id="scheduled-at"
+                type="datetime-local"
+                value={scheduledAt}
+                min={toDatetimeLocalValue(new Date())}
+                onChange={(e) => setScheduledAt(e.target.value)}
+              />
+            </div>
+          )}
         </div>
       )}
 
@@ -307,8 +416,16 @@ export default function DisparoPage() {
             <span className="helper-text">
               O envio será feito um por um, com intervalo entre mensagens (configurável em Configurações).
             </span>
-            <button className="btn" onClick={handleStart} disabled={starting}>
-              {starting ? 'Iniciando...' : `Disparar para ${selectedContacts.length} contato(s) por ${CHANNEL_LABELS[channel]}`}
+            <button
+              className="btn"
+              onClick={handleStart}
+              disabled={starting || (sendMode === 'schedule' && !scheduledAt)}
+            >
+              {starting
+                ? (sendMode === 'schedule' ? 'Agendando...' : 'Iniciando...')
+                : sendMode === 'schedule'
+                  ? `Agendar disparo para ${selectedContacts.length} contato(s) por ${CHANNEL_LABELS[channel]}`
+                  : `Disparar para ${selectedContacts.length} contato(s) por ${CHANNEL_LABELS[channel]}`}
             </button>
           </div>
         </div>

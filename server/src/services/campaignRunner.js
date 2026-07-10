@@ -120,6 +120,7 @@ export async function startCampaign({ name, templateId, channel, contactIds }) {
     sentCount: 0,
     failedCount: 0,
     status: 'running',
+    scheduledAt: null,
     error: null,
     createdAt: now,
     finishedAt: null
@@ -135,4 +136,60 @@ export async function startCampaign({ name, templateId, channel, contactIds }) {
   });
 
   return campaign;
+}
+
+export async function scheduleCampaign({ name, templateId, channel, contactIds, scheduledAt }) {
+  const now = new Date().toISOString();
+  const campaign = {
+    id: nanoid(),
+    name,
+    templateId,
+    channel,
+    contactIds,
+    totalCount: contactIds.length,
+    processedCount: 0,
+    sentCount: 0,
+    failedCount: 0,
+    status: 'scheduled',
+    scheduledAt,
+    error: null,
+    createdAt: now,
+    finishedAt: null
+  };
+  db.data.campaigns.push(campaign);
+  await db.write();
+  return campaign;
+}
+
+export async function cancelScheduledCampaign(id) {
+  const campaign = db.data.campaigns.find((c) => c.id === id);
+  if (!campaign) return { ok: false, reason: 'not_found' };
+  if (campaign.status !== 'scheduled') return { ok: false, reason: 'not_scheduled', campaign };
+
+  campaign.status = 'cancelled';
+  await db.write();
+  return { ok: true, campaign };
+}
+
+// Starts any campaign whose scheduled time has arrived. Meant to be polled
+// periodically (see campaignScheduler.js) rather than driven by a per-campaign
+// timer, so a scheduled send still fires even if the app was closed and
+// reopened after the target time.
+export async function runDueScheduledCampaigns() {
+  const nowIso = new Date().toISOString();
+  const due = db.data.campaigns.filter((c) => c.status === 'scheduled' && c.scheduledAt <= nowIso);
+  if (due.length === 0) return;
+
+  for (const campaign of due) {
+    campaign.status = 'running';
+  }
+  await db.write();
+
+  for (const campaign of due) {
+    runCampaign(campaign.id).catch(async (err) => {
+      campaign.status = 'failed';
+      campaign.error = err.message || String(err);
+      await db.write();
+    });
+  }
 }

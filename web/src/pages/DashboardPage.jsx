@@ -8,6 +8,8 @@ const CAMPAIGN_STATUS_BADGE = {
   completed: <span className="badge badge-success">Concluída</span>,
   failed: <span className="badge badge-danger">Falhou</span>,
   running: <span className="badge badge-warning">Em andamento</span>,
+  scheduled: <span className="badge badge-neutral">Agendada</span>,
+  cancelled: <span className="badge badge-neutral">Cancelada</span>,
 };
 
 function formatShortDate(isoDate) {

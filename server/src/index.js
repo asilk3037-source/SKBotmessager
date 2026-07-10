@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import { createApp } from './app.js';
+import { startCampaignScheduler } from './services/campaignScheduler.js';
 
 const PORT = process.env.PORT || 3001;
 // Loopback-only by default: this app has no authentication on any /api
@@ -16,6 +17,7 @@ process.on('unhandledRejection', (err) => {
 
 app.listen(PORT, HOST, () => {
   console.log(`SKBotmessager backend rodando em http://${HOST}:${PORT}`);
+  startCampaignScheduler();
 }).on('error', (err) => {
   console.error('Falha ao iniciar o servidor:', err.message);
   process.exit(1);
