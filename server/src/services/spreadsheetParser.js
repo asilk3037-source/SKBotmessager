@@ -1,5 +1,9 @@
 import ExcelJS from 'exceljs';
 import { parse as parseCsv } from 'csv-parse/sync';
+import { Worker } from 'node:worker_threads';
+import { fileURLToPath } from 'node:url';
+
+const WORKER_PATH = fileURLToPath(new URL('./spreadsheetParser.worker.js', import.meta.url));
 
 // Parsing runs synchronously on the event loop; an unbounded row count would
 // block every other request (including the WhatsApp client) for as long as
@@ -136,4 +140,26 @@ export async function parseSpreadsheet(buffer, originalName) {
     suggestedPhoneColumn,
     suggestedEmailColumn
   };
+}
+
+// Runs parseSpreadsheet() on a worker thread instead of the main event loop.
+// A large/highly-compressible upload can spend hundreds of milliseconds to
+// seconds inside ExcelJS's synchronous decompress+parse; running it here
+// keeps that off the thread serving every other request (including the
+// WhatsApp client's own event loop use).
+export function parseSpreadsheetInWorker(buffer, originalName) {
+  return new Promise((resolve, reject) => {
+    const worker = new Worker(WORKER_PATH, {
+      workerData: { buffer, originalName }
+    });
+    worker.once('message', (msg) => {
+      worker.terminate();
+      if (msg.ok) resolve(msg.result);
+      else reject(new Error(msg.error));
+    });
+    worker.once('error', (err) => {
+      worker.terminate();
+      reject(err);
+    });
+  });
 }

@@ -37,46 +37,50 @@ router.get('/summary', (req, res) => {
   res.json({ totals, campaigns: [...campaigns].sort((a, b) => b.createdAt.localeCompare(a.createdAt)) });
 });
 
-function toCsv(rows) {
-  const headers = ['data', 'campanha', 'contato', 'destinatario', 'canal', 'status', 'erro', 'assunto', 'mensagem'];
-  // Prefix values that would otherwise open as a formula in Excel/Sheets
-  // (=, +, -, @) so importing user-controlled data (contact names, template
-  // content) can't execute anything when the export is opened.
-  const escape = (v) => {
-    let s = String(v ?? '');
-    if (/^[=+\-@]/.test(s)) s = `'${s}`;
-    return `"${s.replace(/"/g, '""')}"`;
-  };
-  const campaignsById = new Map(db.data.campaigns.map((c) => [c.id, c]));
-  const lines = [headers.join(',')];
+const CSV_HEADERS = ['data', 'campanha', 'contato', 'destinatario', 'canal', 'status', 'erro', 'assunto', 'mensagem'];
 
-  for (const row of rows) {
-    const campaign = campaignsById.get(row.campaignId);
-    lines.push(
-      [
-        row.createdAt,
-        campaign?.name ?? '',
-        row.contactName,
-        row.recipient,
-        row.channel,
-        row.status,
-        row.error ?? '',
-        row.subject ?? '',
-        row.content
-      ]
-        .map(escape)
-        .join(',')
-    );
-  }
-  return lines.join('\n');
+// Prefix values that would otherwise open as a formula in Excel/Sheets
+// (=, +, -, @) so importing user-controlled data (contact names, template
+// content) can't execute anything when the export is opened.
+function escapeCsv(v) {
+  let s = String(v ?? '');
+  if (/^[=+\-@]/.test(s)) s = `'${s}`;
+  return `"${s.replace(/"/g, '""')}"`;
+}
+
+function rowToCsvLine(row, campaignsById) {
+  const campaign = campaignsById.get(row.campaignId);
+  return [
+    row.createdAt,
+    campaign?.name ?? '',
+    row.contactName,
+    row.recipient,
+    row.channel,
+    row.status,
+    row.error ?? '',
+    row.subject ?? '',
+    row.content
+  ]
+    .map(escapeCsv)
+    .join(',');
 }
 
 router.get('/export.csv', (req, res) => {
   const messages = filterMessages(req.query);
-  const csv = toCsv(messages);
+  const campaignsById = new Map(db.data.campaigns.map((c) => [c.id, c]));
+
   res.setHeader('Content-Type', 'text/csv; charset=utf-8');
   res.setHeader('Content-Disposition', `attachment; filename="relatorio-envios-${Date.now()}.csv"`);
-  res.send('﻿' + csv); // BOM so Excel opens UTF-8 accents correctly
+
+  // Streamed row-by-row instead of building the whole file as one string in
+  // memory first - keeps a large export's peak memory bounded to a few rows
+  // instead of the full report, and lets the browser start downloading
+  // immediately.
+  res.write('﻿' + CSV_HEADERS.join(',')); // BOM so Excel opens UTF-8 accents correctly
+  for (const row of messages) {
+    res.write('\n' + rowToCsvLine(row, campaignsById));
+  }
+  res.end();
 });
 
 export default router;

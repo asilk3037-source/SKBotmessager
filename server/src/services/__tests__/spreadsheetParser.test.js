@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import ExcelJS from 'exceljs';
-import { normalizePhone, normalizeEmail, parseSpreadsheet } from '../spreadsheetParser.js';
+import { normalizePhone, normalizeEmail, parseSpreadsheet, parseSpreadsheetInWorker } from '../spreadsheetParser.js';
 
 describe('normalizePhone', () => {
   it('strips formatting characters', () => {
@@ -132,5 +132,20 @@ describe('parseSpreadsheet - XLSX', () => {
     const buffer = await buildXlsxBuffer([['Nome'], ['Joao']]);
     const result = await parseSpreadsheet(buffer, 'upload');
     expect(result.columns).toEqual(['Nome']);
+  });
+});
+
+describe('parseSpreadsheetInWorker', () => {
+  it('parses a CSV buffer on a worker thread and returns the same shape as parseSpreadsheet', async () => {
+    const csv = 'Nome,Telefone\nJoao,11988887777\nMaria,21977776666\n';
+    const result = await parseSpreadsheetInWorker(Buffer.from(csv, 'utf8'), 'contatos.csv');
+    expect(result.columns).toEqual(['Nome', 'Telefone']);
+    expect(result.rows).toHaveLength(2);
+    expect(result.suggestedPhoneColumn).toBe('Telefone');
+  });
+
+  it('rejects with the original error message when parsing fails', async () => {
+    const buffer = Buffer.from([0xd0, 0xcf, 0x11, 0xe0, 0, 0, 0, 0]);
+    await expect(parseSpreadsheetInWorker(buffer, 'old.xls')).rejects.toThrow(/xls antigo não suportado/i);
   });
 });

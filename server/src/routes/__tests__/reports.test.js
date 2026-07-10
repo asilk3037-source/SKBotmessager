@@ -172,4 +172,12 @@ describe('GET /api/reports/export.csv', () => {
     expect(dataLine).toContain('"\'=HYPERLINK(""https://evil.example"",""click"")"');
     expect(dataLine).toContain('"\'+1+1"');
   });
+
+  it('streams just the header row (no trailing newline) when there are no matching messages', async () => {
+    db.data.messages = [];
+
+    const res = await request(app).get('/api/reports/export.csv');
+
+    expect(res.text.slice(1)).toBe('data,campanha,contato,destinatario,canal,status,erro,assunto,mensagem');
+  });
 });

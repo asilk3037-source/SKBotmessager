@@ -2,7 +2,7 @@ import { Router } from 'express';
 import multer from 'multer';
 import { nanoid } from 'nanoid';
 import db from '../db/index.js';
-import { parseSpreadsheet, normalizePhone, normalizeEmail } from '../services/spreadsheetParser.js';
+import { parseSpreadsheetInWorker, normalizePhone, normalizeEmail } from '../services/spreadsheetParser.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 
 const upload = multer({
@@ -35,7 +35,7 @@ router.post('/preview', uploadSpreadsheet, async (req, res) => {
     return res.status(400).json({ error: 'Nenhum arquivo enviado.' });
   }
   try {
-    const preview = await parseSpreadsheet(req.file.buffer, req.file.originalname);
+    const preview = await parseSpreadsheetInWorker(req.file.buffer, req.file.originalname);
     res.json(preview);
   } catch (err) {
     res.status(400).json({ error: `Não foi possível ler a planilha: ${err.message}` });
