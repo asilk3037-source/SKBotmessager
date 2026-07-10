@@ -101,6 +101,9 @@ describe('POST /api/contacts/import', () => {
     });
     expect(db.data.batches).toHaveLength(1);
     expect(db.data.batches[0].importedCount).toBe(1);
+    expect(db.data.auditLog).toContainEqual(
+      expect.objectContaining({ action: 'contacts.import', entity: 'batch', entityId: db.data.batches[0].id })
+    );
   });
 
   it('imports a contact identified only by email when there is no phone column', async () => {
@@ -220,6 +223,9 @@ describe('DELETE /api/contacts/:id', () => {
     const res = await request(app).delete('/api/contacts/c1');
     expect(res.status).toBe(204);
     expect(db.data.contacts).toHaveLength(0);
+    expect(db.data.auditLog).toContainEqual(
+      expect.objectContaining({ action: 'contacts.delete', entity: 'contact', entityId: 'c1' })
+    );
   });
 
   it('returns 404 for a contact that does not exist', async () => {

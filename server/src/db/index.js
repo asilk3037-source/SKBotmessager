@@ -13,6 +13,7 @@ const defaultData = {
   templates: [],
   campaigns: [],
   messages: [],
+  auditLog: [],
   settings: {
     sms: {
       provider: 'twilio',
@@ -41,6 +42,7 @@ db.data.batches ??= [];
 db.data.templates ??= [];
 db.data.campaigns ??= [];
 db.data.messages ??= [];
+db.data.auditLog ??= [];
 db.data.settings ??= defaultData.settings;
 db.data.settings.sms ??= defaultData.settings.sms;
 db.data.settings.sms.baseUrl ??= defaultData.settings.sms.baseUrl;

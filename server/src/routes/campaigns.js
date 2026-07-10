@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import db from '../db/index.js';
 import { startCampaign, scheduleCampaign, cancelScheduledCampaign } from '../services/campaignRunner.js';
+import { logAction } from '../services/auditLogService.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 
 const router = Router();
@@ -45,10 +46,24 @@ router.post('/', asyncHandler(async (req, res) => {
       contactIds,
       scheduledAt: scheduledDate.toISOString()
     });
+    // Not awaited: `campaign` is the same mutable object stored in
+    // db.data.campaigns, and awaiting anything here before res.json()
+    // risks the response racing against background mutation of that object
+    // (as happens below with the fire-and-forget runCampaign()).
+    logAction('campaigns.schedule', {
+      entity: 'campaign',
+      entityId: campaign.id,
+      meta: { name: campaign.name, channel, totalCount: campaign.totalCount, scheduledAt: campaign.scheduledAt }
+    }).catch(() => {});
     return res.status(201).json(campaign);
   }
 
   const campaign = await startCampaign({ name, templateId, channel, contactIds });
+  logAction('campaigns.start', {
+    entity: 'campaign',
+    entityId: campaign.id,
+    meta: { name: campaign.name, channel, totalCount: campaign.totalCount }
+  }).catch(() => {});
   res.status(201).json(campaign);
 }));
 
@@ -60,6 +75,7 @@ router.post('/:id/cancel', asyncHandler(async (req, res) => {
   if (!result.ok) {
     return res.status(400).json({ error: 'Apenas campanhas agendadas podem ser canceladas.' });
   }
+  logAction('campaigns.cancel', { entity: 'campaign', entityId: result.campaign.id, meta: { name: result.campaign.name } }).catch(() => {});
   res.json(result.campaign);
 }));
 

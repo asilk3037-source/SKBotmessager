@@ -3,6 +3,7 @@ import multer from 'multer';
 import { nanoid } from 'nanoid';
 import db from '../db/index.js';
 import { parseSpreadsheetInWorker, normalizePhone, normalizeEmail } from '../services/spreadsheetParser.js';
+import { logAction } from '../services/auditLogService.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 
 const upload = multer({
@@ -102,6 +103,14 @@ router.post('/import', asyncHandler(async (req, res) => {
   });
   db.data.contacts.push(...imported);
   await db.write();
+  // Fire-and-forget: the entry is pushed synchronously (before logAction's
+  // own await), so it's already in db.data.auditLog by the time this
+  // handler returns - but the response itself never waits on it.
+  logAction('contacts.import', {
+    entity: 'batch',
+    entityId: batchId,
+    meta: { label: batchLabel || fileName, importedCount: imported.length, skippedCount: skipped.length }
+  }).catch(() => {});
 
   res.status(201).json({
     batchId,
@@ -118,11 +127,18 @@ router.get('/batches', (req, res) => {
 
 router.delete('/batches/:batchId', asyncHandler(async (req, res) => {
   const { batchId } = req.params;
+  const batch = db.data.batches.find((b) => b.id === batchId);
   const before = db.data.contacts.length;
   db.data.contacts = db.data.contacts.filter((c) => c.batchId !== batchId);
   db.data.batches = db.data.batches.filter((b) => b.id !== batchId);
   await db.write();
-  res.json({ removedContacts: before - db.data.contacts.length });
+  const removedContacts = before - db.data.contacts.length;
+  logAction('batches.delete', {
+    entity: 'batch',
+    entityId: batchId,
+    meta: { label: batch?.label ?? null, removedContacts }
+  }).catch(() => {});
+  res.json({ removedContacts });
 }));
 
 router.get('/', (req, res) => {
@@ -151,12 +167,14 @@ router.get('/', (req, res) => {
 });
 
 router.delete('/:id', asyncHandler(async (req, res) => {
+  const contact = db.data.contacts.find((c) => c.id === req.params.id);
   const before = db.data.contacts.length;
   db.data.contacts = db.data.contacts.filter((c) => c.id !== req.params.id);
   await db.write();
   if (db.data.contacts.length === before) {
     return res.status(404).json({ error: 'Contato não encontrado.' });
   }
+  logAction('contacts.delete', { entity: 'contact', entityId: req.params.id, meta: { name: contact?.name ?? null } }).catch(() => {});
   res.status(204).end();
 }));
 

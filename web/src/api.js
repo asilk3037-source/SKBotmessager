@@ -74,4 +74,10 @@ export const api = {
   getWhatsappStatus: () => request('/whatsapp/status'),
   connectWhatsapp: () => request('/whatsapp/connect', { method: 'POST' }),
   logoutWhatsapp: () => request('/whatsapp/logout', { method: 'POST' }),
+
+  // Audit log
+  listAuditLog: (params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return request(`/audit-log${qs ? `?${qs}` : ''}`);
+  },
 };

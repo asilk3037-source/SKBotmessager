@@ -64,6 +64,9 @@ describe('POST /api/campaigns', () => {
     expect(res.body.status).toBe('running');
     expect(res.body.totalCount).toBe(1);
     expect(db.data.campaigns).toHaveLength(1);
+    expect(db.data.auditLog).toContainEqual(
+      expect.objectContaining({ action: 'campaigns.start', entity: 'campaign', entityId: res.body.id })
+    );
   });
 
   it('creates a "scheduled" campaign instead of running it immediately when scheduledAt is a future date', async () => {
@@ -116,6 +119,9 @@ describe('POST /api/campaigns/:id/cancel', () => {
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('cancelled');
     expect(db.data.campaigns.find((c) => c.id === 'sched-1').status).toBe('cancelled');
+    expect(db.data.auditLog).toContainEqual(
+      expect.objectContaining({ action: 'campaigns.cancel', entity: 'campaign', entityId: 'sched-1' })
+    );
   });
 
   it('returns 400 when the campaign is not in "scheduled" state', async () => {

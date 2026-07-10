@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { nanoid } from 'nanoid';
 import db from '../db/index.js';
+import { logAction } from '../services/auditLogService.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 
 const router = Router();
@@ -40,6 +41,7 @@ router.post('/', asyncHandler(async (req, res) => {
   };
   db.data.templates.push(template);
   await db.write();
+  logAction('templates.create', { entity: 'template', entityId: template.id, meta: { name: template.name, channel: template.channel } }).catch(() => {});
   res.status(201).json(template);
 }));
 
@@ -69,16 +71,19 @@ router.put('/:id', asyncHandler(async (req, res) => {
   template.updatedAt = new Date().toISOString();
 
   await db.write();
+  logAction('templates.update', { entity: 'template', entityId: template.id, meta: { name: template.name } }).catch(() => {});
   res.json(template);
 }));
 
 router.delete('/:id', asyncHandler(async (req, res) => {
+  const template = db.data.templates.find((t) => t.id === req.params.id);
   const before = db.data.templates.length;
   db.data.templates = db.data.templates.filter((t) => t.id !== req.params.id);
   await db.write();
   if (db.data.templates.length === before) {
     return res.status(404).json({ error: 'Template não encontrado.' });
   }
+  logAction('templates.delete', { entity: 'template', entityId: req.params.id, meta: { name: template?.name ?? null } }).catch(() => {});
   res.status(204).end();
 }));
 

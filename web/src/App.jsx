@@ -9,6 +9,7 @@ import TemplatesPage from './pages/TemplatesPage.jsx';
 import DisparoPage from './pages/DisparoPage.jsx';
 import RelatoriosPage from './pages/RelatoriosPage.jsx';
 import ConfiguracoesPage from './pages/ConfiguracoesPage.jsx';
+import AuditoriaPage from './pages/AuditoriaPage.jsx';
 
 function Icon({ path }) {
   return (
@@ -26,6 +27,7 @@ const NAV_ITEMS = [
   { to: '/disparo', label: 'Disparo em massa', icon: 'M4 12 20 4l-6 16-3-7-7-1Z' },
   { to: '/relatorios', label: 'Relatórios', icon: 'M4 20V10m6 10V4m6 16v-7' },
   { to: '/configuracoes', label: 'Configurações', icon: 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm8-3a7.97 7.97 0 0 0-.2-1.8l2.1-1.6-2-3.4-2.5 1a8 8 0 0 0-3.1-1.8L14 2h-4l-.3 2.4a8 8 0 0 0-3.1 1.8l-2.5-1-2 3.4 2.1 1.6A8 8 0 0 0 4 12c0 .6.07 1.2.2 1.8l-2.1 1.6 2 3.4 2.5-1a8 8 0 0 0 3.1 1.8L10 22h4l.3-2.4a8 8 0 0 0 3.1-1.8l2.5 1 2-3.4-2.1-1.6c.13-.6.2-1.2.2-1.8Z' },
+  { to: '/auditoria', label: 'Auditoria', icon: 'M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2m-5 8 2 2 4-4' },
 ];
 
 export default function App() {
@@ -101,6 +103,7 @@ export default function App() {
               <Route path="/disparo" element={<DisparoPage />} />
               <Route path="/relatorios" element={<RelatoriosPage />} />
               <Route path="/configuracoes" element={<ConfiguracoesPage />} />
+              <Route path="/auditoria" element={<AuditoriaPage />} />
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Routes>
           </div>

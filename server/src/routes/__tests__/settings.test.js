@@ -45,6 +45,14 @@ describe('PUT /api/settings', () => {
     expect(res.body.sms.baseUrl).toBe('https://api.sms-gate.app/3rdparty/v1'); // untouched default kept
 
     expect(db.data.settings.sms.provider).toBe('mock');
+    expect(db.data.auditLog).toContainEqual(
+      expect.objectContaining({ action: 'settings.update', meta: { sections: ['sms'] } })
+    );
+  });
+
+  it('does not write an audit entry when no recognized fields are sent', async () => {
+    await request(app).put('/api/settings').send({});
+    expect(db.data.auditLog).toEqual([]);
   });
 
   it('merges partial email settings', async () => {

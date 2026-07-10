@@ -42,6 +42,9 @@ describe('POST /api/templates', () => {
     expect(res.status).toBe(201);
     expect(res.body).toMatchObject({ name: 'T', content: 'Ola {{nome}}', channel: 'any', subject: '', isDefault: false });
     expect(db.data.templates).toHaveLength(1);
+    expect(db.data.auditLog).toContainEqual(
+      expect.objectContaining({ action: 'templates.create', entity: 'template', entityId: res.body.id })
+    );
   });
 
   it('unsets other defaults for the same channel when creating a new default', async () => {
@@ -124,6 +127,9 @@ describe('DELETE /api/templates/:id', () => {
     const res = await request(app).delete('/api/templates/t1');
     expect(res.status).toBe(204);
     expect(db.data.templates).toHaveLength(0);
+    expect(db.data.auditLog).toContainEqual(
+      expect.objectContaining({ action: 'templates.delete', entity: 'template', entityId: 't1' })
+    );
   });
 
   it('returns 404 when the template does not exist', async () => {

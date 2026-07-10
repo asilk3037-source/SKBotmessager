@@ -39,6 +39,7 @@ vi.mock('qrcode', () => ({
 
 const { createApp } = await import('../../app.js');
 const whatsappService = (await import('../../services/whatsappService.js')).default;
+const db = (await import('../../db/index.js')).default;
 
 const app = createApp();
 
@@ -50,6 +51,7 @@ beforeEach(() => {
   whatsappService.qrDataUrl = null;
   whatsappService.connectedNumber = null;
   whatsappService.error = null;
+  db.data.auditLog = [];
 });
 
 describe('GET /api/whatsapp/status', () => {
@@ -67,6 +69,7 @@ describe('POST /api/whatsapp/connect', () => {
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('connecting');
     expect(state.instances).toHaveLength(1);
+    expect(db.data.auditLog.some((e) => e.action === 'whatsapp.connect')).toBe(true);
   });
 
   it('does not create a second client on a repeated connect call', async () => {

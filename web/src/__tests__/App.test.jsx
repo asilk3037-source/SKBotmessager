@@ -13,6 +13,7 @@ vi.mock('../pages/TemplatesPage.jsx', () => ({ default: () => <div>Tela: Templat
 vi.mock('../pages/DisparoPage.jsx', () => ({ default: () => <div>Tela: Disparo</div> }));
 vi.mock('../pages/RelatoriosPage.jsx', () => ({ default: () => <div>Tela: Relatorios</div> }));
 vi.mock('../pages/ConfiguracoesPage.jsx', () => ({ default: () => <div>Tela: Configuracoes</div> }));
+vi.mock('../pages/AuditoriaPage.jsx', () => ({ default: () => <div>Tela: Auditoria</div> }));
 
 function renderAt(path) {
   return render(
@@ -48,5 +49,10 @@ describe('App', () => {
     renderAt('/upload');
     await userEvent.click(screen.getByRole('link', { name: 'Configurações' }));
     expect(screen.getByText('Tela: Configuracoes')).toBeInTheDocument();
+  });
+
+  it('renders the Auditoria page', () => {
+    renderAt('/auditoria');
+    expect(screen.getByText('Tela: Auditoria')).toBeInTheDocument();
   });
 });

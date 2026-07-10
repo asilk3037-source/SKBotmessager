@@ -7,3 +7,7 @@ coverage/
 # Backend runtime data (contacts, campaigns, WhatsApp session) - stays local, never committed
 server/data/*
 !server/data/.gitkeep
+
+# whatsapp-web.js's downloaded Chromium/WhatsApp-Web version cache
+server/.wwebjs_cache/
+server/.wwebjs_auth/

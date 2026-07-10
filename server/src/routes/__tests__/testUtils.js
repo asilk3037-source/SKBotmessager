@@ -6,6 +6,7 @@ export async function resetDb() {
   db.data.templates = [];
   db.data.campaigns = [];
   db.data.messages = [];
+  db.data.auditLog = [];
   db.data.settings.sms = {
     provider: 'twilio',
     accountSid: '',

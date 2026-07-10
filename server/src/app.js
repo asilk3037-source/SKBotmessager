@@ -11,6 +11,7 @@ import campaignsRouter from './routes/campaigns.js';
 import reportsRouter from './routes/reports.js';
 import settingsRouter from './routes/settings.js';
 import whatsappRouter from './routes/whatsapp.js';
+import auditLogRouter from './routes/auditLog.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -63,6 +64,7 @@ export function createApp() {
   app.use('/api/reports', reportsRouter);
   app.use('/api/settings', settingsRouter);
   app.use('/api/whatsapp', whatsappRouter);
+  app.use('/api/audit-log', auditLogRouter);
 
   app.get('/api/health', (req, res) => res.json({ ok: true }));
 

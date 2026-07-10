@@ -2,6 +2,7 @@ import { Router } from 'express';
 import db from '../db/index.js';
 import { listProviders } from '../services/smsService.js';
 import { sendTestWebhook } from '../services/webhookService.js';
+import { logAction } from '../services/auditLogService.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 
 const router = Router();
@@ -63,6 +64,8 @@ router.put('/', asyncHandler(async (req, res) => {
     }
   }
 
+  const changedSections = [];
+
   if (sms) {
     // A blank secret field means "leave it as is" (the client never receives
     // the real value to send back) - only a non-empty value overwrites it.
@@ -71,21 +74,30 @@ router.put('/', asyncHandler(async (req, res) => {
     if (!incoming.authToken) merged.authToken = db.data.settings.sms.authToken;
     if (!incoming.password) merged.password = db.data.settings.sms.password;
     db.data.settings.sms = merged;
+    changedSections.push('sms');
   }
   if (email) {
     const { appPasswordSet, ...incoming } = email;
     const merged = { ...db.data.settings.email, ...incoming };
     if (!incoming.appPassword) merged.appPassword = db.data.settings.email.appPassword;
     db.data.settings.email = merged;
+    changedSections.push('email');
   }
   if (typeof delayBetweenMessagesMs === 'number' && delayBetweenMessagesMs >= 500) {
     db.data.settings.delayBetweenMessagesMs = delayBetweenMessagesMs;
+    changedSections.push('delayBetweenMessagesMs');
   }
   if (typeof webhookUrl === 'string') {
     db.data.settings.webhookUrl = webhookUrl;
+    changedSections.push('webhookUrl');
   }
 
   await db.write();
+  // Logs which sections changed, never the values - secrets in particular
+  // must never end up in the audit trail.
+  if (changedSections.length > 0) {
+    logAction('settings.update', { entity: 'settings', meta: { sections: changedSections } }).catch(() => {});
+  }
   res.json(maskSettings(db.data.settings));
 }));
 
