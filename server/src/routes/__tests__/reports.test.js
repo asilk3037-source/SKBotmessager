@@ -45,6 +45,15 @@ describe('GET /api/reports/messages', () => {
     expect(res.body.messages.map((m) => m.id)).toEqual(['m2', 'm1']);
   });
 
+  it('paginates results, keeping "total" as the full filtered count', async () => {
+    const res = await request(app).get('/api/reports/messages').query({ pageSize: 1, page: 2 });
+    expect(res.body.total).toBe(2);
+    expect(res.body.page).toBe(2);
+    expect(res.body.pageSize).toBe(1);
+    expect(res.body.messages).toHaveLength(1);
+    expect(res.body.messages[0].id).toBe('m1');
+  });
+
   it('filters by campaignId', async () => {
     const res = await request(app).get('/api/reports/messages').query({ campaignId: 'no-such-campaign' });
     expect(res.body.total).toBe(0);

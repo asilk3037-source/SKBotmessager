@@ -147,7 +147,7 @@ export default function UploadPage() {
           <p className="helper-text">
             {preview.rows.length} linha(s) encontradas. Pré-visualização das 5 primeiras:
           </p>
-          <div style={{ overflowX: 'auto' }}>
+          <div className="table-scroll">
             <table>
               <thead>
                 <tr>{preview.columns.map((col) => <th key={col}>{col}</th>)}</tr>

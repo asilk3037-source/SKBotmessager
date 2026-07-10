@@ -88,6 +88,32 @@ button, input, select, textarea {
 .app-shell {
   display: flex;
   min-height: calc(100vh - var(--titlebar-h));
+  position: relative;
+}
+
+.menu-toggle {
+  display: none;
+  position: fixed;
+  top: calc(var(--titlebar-h) + 10px);
+  left: 10px;
+  z-index: 60;
+  width: 36px;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-md);
+  cursor: pointer;
+}
+
+.sidebar-backdrop {
+  display: none;
+  border: none;
+  padding: 0;
+  cursor: default;
 }
 
 .sidebar {
@@ -259,6 +285,20 @@ label {
 
 .row > * { flex: 1; }
 
+.table-scroll {
+  overflow-x: auto;
+  /* Fades the right edge when there's more content to scroll to, so
+     losing a column off-screen (e.g. on narrow windows) isn't silent. */
+  background:
+    linear-gradient(to right, var(--surface) 30%, rgba(255, 255, 255, 0)),
+    linear-gradient(to right, rgba(255, 255, 255, 0), var(--surface) 70%) 100% 0,
+    linear-gradient(to right, rgba(20, 32, 26, 0.08), rgba(20, 32, 26, 0)),
+    linear-gradient(to left, rgba(20, 32, 26, 0.08), rgba(20, 32, 26, 0)) 100% 0;
+  background-repeat: no-repeat;
+  background-size: 40px 100%, 40px 100%, 14px 100%, 14px 100%;
+  background-attachment: local, local, scroll, scroll;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
@@ -406,3 +446,126 @@ tr:hover td { background: #fafbfa; }
 }
 
 .tag:hover { background: var(--primary-light); color: var(--primary); }
+
+.pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.pagination-summary {
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pagination-page {
+  font-size: 13px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* Confirmation modal (replaces window.confirm) */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 18, 14, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 20px;
+  animation: modal-fade-in 0.15s ease;
+}
+
+@keyframes modal-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modal-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  padding: 24px;
+  max-width: 420px;
+  width: 100%;
+  animation: modal-pop-in 0.18s ease;
+}
+
+@keyframes modal-pop-in {
+  from { opacity: 0; transform: translateY(6px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.modal-title {
+  margin: 0 0 8px;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.modal-message {
+  margin: 0 0 20px;
+  color: var(--text-muted);
+  font-size: 14.5px;
+  line-height: 1.5;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* ---- Responsive: tablet and mobile ---- */
+@media (max-width: 900px) {
+  .menu-toggle { display: inline-flex; }
+
+  .sidebar {
+    position: fixed;
+    top: var(--titlebar-h);
+    left: 0;
+    bottom: 0;
+    z-index: 55;
+    transform: translateX(-100%);
+    transition: transform 0.22s ease;
+  }
+
+  .sidebar.open { transform: translateX(0); }
+
+  .sidebar-backdrop {
+    display: block;
+    position: fixed;
+    top: var(--titlebar-h);
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(10, 18, 14, 0.4);
+    z-index: 50;
+  }
+
+  .main {
+    padding: 24px 20px 24px 64px;
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 600px) {
+  .main { padding: 20px 14px 20px 56px; }
+  .page-title { font-size: 20px; }
+  .stat-grid { grid-template-columns: repeat(2, 1fr); }
+  .row { flex-direction: column; gap: 0; }
+  .toolbar { flex-direction: column; align-items: stretch; }
+  .toolbar .row { max-width: none !important; }
+  .card { padding: 16px; }
+}

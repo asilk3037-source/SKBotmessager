@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import ContatosPage from '../ContatosPage.jsx';
@@ -65,7 +65,6 @@ describe('ContatosPage', () => {
   });
 
   it('deletes a contact after confirmation and reloads the list', async () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
     api.deleteContact.mockResolvedValue(null);
     renderPage();
 
@@ -75,23 +74,27 @@ describe('ContatosPage', () => {
     const removeButtons = screen.getAllByRole('button', { name: 'Remover' });
     await userEvent.click(removeButtons[removeButtons.length - 1]);
 
+    const dialog = await screen.findByRole('alertdialog');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Remover' }));
+
     expect(api.deleteContact).toHaveBeenCalledWith('c1');
     await waitFor(() => expect(api.listContacts).toHaveBeenCalledTimes(2));
   });
 
   it('does not delete the contact when the confirmation is cancelled', async () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(false);
     renderPage();
 
     await waitFor(() => expect(screen.getByText('Joao')).toBeInTheDocument());
     const removeButtons = screen.getAllByRole('button', { name: 'Remover' });
     await userEvent.click(removeButtons[removeButtons.length - 1]);
 
+    const dialog = await screen.findByRole('alertdialog');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Cancelar' }));
+
     expect(api.deleteContact).not.toHaveBeenCalled();
   });
 
   it('deletes a whole batch after confirmation', async () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
     api.deleteBatch.mockResolvedValue({ removedContacts: 2 });
     renderPage();
 
@@ -100,7 +103,22 @@ describe('ContatosPage', () => {
     const removeButtons = screen.getAllByRole('button', { name: 'Remover' });
     await userEvent.click(removeButtons[0]);
 
+    const dialog = await screen.findByRole('alertdialog');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Remover' }));
+
     expect(api.deleteBatch).toHaveBeenCalledWith('b1');
+  });
+
+  it('shows pagination controls when there are more contacts than fit on one page, and advances the page', async () => {
+    api.listContacts.mockResolvedValue({ total: 120, contacts: [CONTACT] });
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText(/página 1 de 3/i)).toBeInTheDocument());
+    await userEvent.click(screen.getByRole('button', { name: 'Próxima' }));
+
+    await waitFor(() =>
+      expect(api.listContacts).toHaveBeenLastCalledWith(expect.objectContaining({ page: 2, pageSize: 50 }))
+    );
   });
 
   it('debounces the search box before calling listContacts again', async () => {

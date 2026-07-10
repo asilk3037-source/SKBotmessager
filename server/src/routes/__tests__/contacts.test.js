@@ -187,6 +187,22 @@ describe('GET /api/contacts', () => {
     expect(byEmail.body.total).toBe(1);
     expect(byEmail.body.contacts[0].id).toBe('c2');
   });
+
+  it('paginates results, keeping "total" as the full filtered count', async () => {
+    const res = await request(app).get('/api/contacts').query({ pageSize: 1, page: 2 });
+    expect(res.body.total).toBe(2);
+    expect(res.body.page).toBe(2);
+    expect(res.body.pageSize).toBe(1);
+    expect(res.body.contacts).toHaveLength(1);
+    expect(res.body.contacts[0].id).toBe('c2');
+  });
+
+  it('defaults to page 1 with a reasonable page size', async () => {
+    const res = await request(app).get('/api/contacts');
+    expect(res.body.page).toBe(1);
+    expect(res.body.pageSize).toBeGreaterThanOrEqual(2);
+    expect(res.body.contacts).toHaveLength(2);
+  });
 });
 
 describe('DELETE /api/contacts/:id', () => {

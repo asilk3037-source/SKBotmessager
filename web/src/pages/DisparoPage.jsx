@@ -186,7 +186,7 @@ export default function DisparoPage() {
               {selectedIds.size === contacts.length ? 'Desmarcar todos' : 'Marcar todos'}
             </button>
           </div>
-          <div style={{ maxHeight: 260, overflowY: 'auto' }}>
+          <div className="table-scroll" style={{ maxHeight: 260, overflowY: 'auto' }}>
             <table>
               <tbody>
                 {contacts.map((c) => {

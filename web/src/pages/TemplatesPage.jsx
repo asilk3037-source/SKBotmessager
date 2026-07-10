@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api.js';
 import { CHANNEL_LABELS } from '../constants.js';
+import ConfirmDialog from '../components/ConfirmDialog.jsx';
 
 const EMPTY_FORM = { id: null, name: '', content: '', subject: '', channel: 'any', isDefault: false };
 
@@ -9,6 +10,7 @@ export default function TemplatesPage() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [confirmState, setConfirmState] = useState(null);
 
   async function load() {
     try {
@@ -51,14 +53,19 @@ export default function TemplatesPage() {
     }
   }
 
-  async function handleDelete(id) {
-    if (!confirm('Remover este template?')) return;
-    try {
-      await api.deleteTemplate(id);
-      load();
-    } catch (err) {
-      setError(err.message);
-    }
+  function handleDelete(id) {
+    setConfirmState({
+      message: 'Remover este template?',
+      onConfirm: async () => {
+        setConfirmState(null);
+        try {
+          await api.deleteTemplate(id);
+          load();
+        } catch (err) {
+          setError(err.message);
+        }
+      },
+    });
   }
 
   const usesEmail = form.channel === 'email' || form.channel === 'any';
@@ -161,6 +168,7 @@ export default function TemplatesPage() {
         {templates.length === 0 ? (
           <div className="empty-state">Nenhum template criado ainda.</div>
         ) : (
+          <div className="table-scroll">
           <table>
             <thead>
               <tr>
@@ -186,8 +194,17 @@ export default function TemplatesPage() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
+      <ConfirmDialog
+        open={!!confirmState}
+        message={confirmState?.message}
+        danger
+        confirmLabel="Remover"
+        onConfirm={confirmState?.onConfirm}
+        onCancel={() => setConfirmState(null)}
+      />
     </div>
   );
 }

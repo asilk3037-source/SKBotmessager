@@ -18,7 +18,12 @@ function filterMessages(query) {
 
 router.get('/messages', (req, res) => {
   const messages = filterMessages(req.query);
-  res.json({ total: messages.length, messages });
+  const total = messages.length;
+  const page = Math.max(1, Number(req.query.page) || 1);
+  const pageSize = Math.min(200, Math.max(1, Number(req.query.pageSize) || 50));
+  const start = (page - 1) * pageSize;
+
+  res.json({ total, page, pageSize, messages: messages.slice(start, start + pageSize) });
 });
 
 router.get('/summary', (req, res) => {

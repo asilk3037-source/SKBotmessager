@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { api } from '../api.js';
 import { CHANNEL_LABELS } from '../constants.js';
+import Pagination from '../components/Pagination.jsx';
 
 const STATUS_BADGE = {
   sent: <span className="badge badge-success">Enviada</span>,
@@ -8,9 +9,13 @@ const STATUS_BADGE = {
   pending: <span className="badge badge-warning">Pendente</span>,
 };
 
+const PAGE_SIZE = 50;
+
 export default function RelatoriosPage() {
   const [summary, setSummary] = useState(null);
   const [messages, setMessages] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
   const [filters, setFilters] = useState({ channel: '', status: '', campaignId: '' });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -19,19 +24,25 @@ export default function RelatoriosPage() {
     setLoading(true);
     setError('');
     try {
+      const activeFilters = Object.fromEntries(Object.entries(filters).filter(([, v]) => v));
       const [summaryData, messagesData] = await Promise.all([
         api.reportSummary(),
-        api.listMessages(Object.fromEntries(Object.entries(filters).filter(([, v]) => v))),
+        api.listMessages({ ...activeFilters, page, pageSize: PAGE_SIZE }),
       ]);
       setSummary(summaryData);
       setMessages(messagesData.messages);
+      setTotal(messagesData.total);
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
-  }, [filters]);
+  }, [filters, page]);
 
+  // Changing a filter should always jump back to page 1, same reasoning as
+  // Contatos: staying on a later page of a now-shorter filtered list would
+  // show an empty page with no explanation.
+  useEffect(() => { setPage(1); }, [filters]);
   useEffect(() => { load(); }, [load]);
 
   return (
@@ -94,7 +105,7 @@ export default function RelatoriosPage() {
         ) : messages.length === 0 ? (
           <div className="empty-state">Nenhum envio encontrado com esses filtros.</div>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
+          <div className="table-scroll">
             <table>
               <thead>
                 <tr>
@@ -124,6 +135,7 @@ export default function RelatoriosPage() {
             </table>
           </div>
         )}
+        <Pagination page={page} pageSize={PAGE_SIZE} total={total} onPageChange={setPage} />
       </div>
     </div>
   );

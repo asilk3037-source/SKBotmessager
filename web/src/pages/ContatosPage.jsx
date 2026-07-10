@@ -1,15 +1,21 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api.js';
+import ConfirmDialog from '../components/ConfirmDialog.jsx';
+import Pagination from '../components/Pagination.jsx';
+
+const PAGE_SIZE = 50;
 
 export default function ContatosPage() {
   const [batches, setBatches] = useState([]);
   const [selectedBatch, setSelectedBatch] = useState('');
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
   const [contacts, setContacts] = useState([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [confirmState, setConfirmState] = useState(null);
   const requestIdRef = useRef(0);
 
   const loadBatches = useCallback(async () => {
@@ -29,7 +35,7 @@ export default function ContatosPage() {
     setLoading(true);
     setError('');
     try {
-      const params = {};
+      const params = { page, pageSize: PAGE_SIZE };
       if (selectedBatch) params.batchId = selectedBatch;
       if (search) params.search = search;
       const data = await api.listContacts(params);
@@ -42,26 +48,42 @@ export default function ContatosPage() {
     } finally {
       if (requestId === requestIdRef.current) setLoading(false);
     }
-  }, [selectedBatch, search]);
+  }, [selectedBatch, search, page]);
 
   useEffect(() => { loadBatches(); }, [loadBatches]);
+  // Changing the batch/search filter should always jump back to page 1 -
+  // staying on, say, page 5 of a now much shorter filtered list would show
+  // an empty page with no obvious explanation.
+  useEffect(() => { setPage(1); }, [selectedBatch, search]);
   useEffect(() => {
     const t = setTimeout(loadContacts, 250);
     return () => clearTimeout(t);
   }, [loadContacts]);
 
-  async function handleDeleteContact(id) {
-    if (!confirm('Remover este contato?')) return;
-    try {
-      await api.deleteContact(id);
-      loadContacts();
-    } catch (err) {
-      setError(err.message);
-    }
+  function handleDeleteContact(id) {
+    setConfirmState({
+      message: 'Remover este contato?',
+      onConfirm: async () => {
+        setConfirmState(null);
+        try {
+          await api.deleteContact(id);
+          loadContacts();
+        } catch (err) {
+          setError(err.message);
+        }
+      },
+    });
   }
 
-  async function handleDeleteBatch(batchId) {
-    if (!confirm('Remover este lote e todos os contatos importados nele?')) return;
+  function handleDeleteBatch(batchId) {
+    setConfirmState({
+      message: 'Remover este lote e todos os contatos importados nele?',
+      onConfirm: () => confirmDeleteBatch(batchId),
+    });
+  }
+
+  async function confirmDeleteBatch(batchId) {
+    setConfirmState(null);
     try {
       await api.deleteBatch(batchId);
       if (selectedBatch === batchId) setSelectedBatch('');
@@ -87,6 +109,7 @@ export default function ContatosPage() {
         <>
           <div className="card">
             <h3>Lotes importados</h3>
+            <div className="table-scroll">
             <table>
               <thead>
                 <tr>
@@ -116,6 +139,7 @@ export default function ContatosPage() {
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
 
           <div className="card">
@@ -139,6 +163,7 @@ export default function ContatosPage() {
             {contacts.length === 0 ? (
               <div className="empty-state">Nenhum contato encontrado.</div>
             ) : (
+              <div className="table-scroll">
               <table>
                 <thead>
                   <tr>
@@ -167,10 +192,20 @@ export default function ContatosPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
             )}
+            <Pagination page={page} pageSize={PAGE_SIZE} total={total} onPageChange={setPage} />
           </div>
         </>
       )}
+      <ConfirmDialog
+        open={!!confirmState}
+        message={confirmState?.message}
+        danger
+        confirmLabel="Remover"
+        onConfirm={confirmState?.onConfirm}
+        onCancel={() => setConfirmState(null)}
+      />
     </div>
   );
 }

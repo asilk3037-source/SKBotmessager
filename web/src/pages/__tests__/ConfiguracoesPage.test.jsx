@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import ConfiguracoesPage from '../ConfiguracoesPage.jsx';
 import { api } from '../../api.js';
@@ -81,13 +81,15 @@ describe('ConfiguracoesPage - WhatsApp', () => {
   });
 
   it('logs out after confirmation', async () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
     api.getWhatsappStatus.mockResolvedValue({ status: 'connected', qrDataUrl: null, connectedNumber: '5511999999999', error: null });
     api.logoutWhatsapp.mockResolvedValue({ status: 'disconnected', qrDataUrl: null, connectedNumber: null, error: null });
     render(<ConfiguracoesPage />);
 
     await waitFor(() => screen.getByRole('button', { name: /desconectar/i }));
     await userEvent.click(screen.getByRole('button', { name: /desconectar/i }));
+
+    const dialog = await screen.findByRole('alertdialog');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Desconectar' }));
 
     expect(api.logoutWhatsapp).toHaveBeenCalled();
     await waitFor(() => expect(screen.getByRole('button', { name: /conectar whatsapp/i })).toBeInTheDocument());

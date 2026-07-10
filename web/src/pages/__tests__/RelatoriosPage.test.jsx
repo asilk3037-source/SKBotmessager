@@ -97,6 +97,18 @@ describe('RelatoriosPage', () => {
     );
   });
 
+  it('shows pagination controls when there are more messages than fit on one page, and advances the page', async () => {
+    api.listMessages.mockResolvedValue({ total: 120, messages: MESSAGES });
+    render(<RelatoriosPage />);
+
+    await waitFor(() => expect(screen.getByText(/página 1 de 3/i)).toBeInTheDocument());
+    await userEvent.click(screen.getByRole('button', { name: 'Próxima' }));
+
+    await waitFor(() =>
+      expect(api.listMessages).toHaveBeenLastCalledWith(expect.objectContaining({ page: 2, pageSize: 50 }))
+    );
+  });
+
   it('builds the CSV export link with the active filters', async () => {
     render(<RelatoriosPage />);
     await waitFor(() => expect(screen.getByText('Joao')).toBeInTheDocument());

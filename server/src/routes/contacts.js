@@ -123,7 +123,12 @@ router.get('/', (req, res) => {
     );
   }
 
-  res.json({ total: contacts.length, contacts });
+  const total = contacts.length;
+  const page = Math.max(1, Number(req.query.page) || 1);
+  const pageSize = Math.min(200, Math.max(1, Number(req.query.pageSize) || 50));
+  const start = (page - 1) * pageSize;
+
+  res.json({ total, page, pageSize, contacts: contacts.slice(start, start + pageSize) });
 });
 
 router.delete('/:id', asyncHandler(async (req, res) => {

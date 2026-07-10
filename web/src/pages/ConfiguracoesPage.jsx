@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { api } from '../api.js';
+import ConfirmDialog from '../components/ConfirmDialog.jsx';
 
 const STATUS_LABELS = {
   disconnected: { text: 'Desconectado', className: 'badge-neutral' },
@@ -17,6 +18,7 @@ export default function ConfiguracoesPage() {
   const [savingSection, setSavingSection] = useState('');
   const [savedSection, setSavedSection] = useState('');
   const [error, setError] = useState('');
+  const [confirmState, setConfirmState] = useState(null);
   const pollRef = useRef(null);
 
   async function loadWaStatus() {
@@ -61,14 +63,19 @@ export default function ConfiguracoesPage() {
     }
   }
 
-  async function handleLogout() {
-    if (!confirm('Desconectar o WhatsApp?')) return;
-    try {
-      const status = await api.logoutWhatsapp();
-      setWaStatus(status);
-    } catch (err) {
-      setError(err.message);
-    }
+  function handleLogout() {
+    setConfirmState({
+      message: 'Desconectar o WhatsApp?',
+      onConfirm: async () => {
+        setConfirmState(null);
+        try {
+          const status = await api.logoutWhatsapp();
+          setWaStatus(status);
+        } catch (err) {
+          setError(err.message);
+        }
+      },
+    });
   }
 
   async function saveSection(section, payload) {
@@ -333,6 +340,13 @@ export default function ConfiguracoesPage() {
           </button>
         </div>
       </form>
+      <ConfirmDialog
+        open={!!confirmState}
+        message={confirmState?.message}
+        confirmLabel="Desconectar"
+        onConfirm={confirmState?.onConfirm}
+        onCancel={() => setConfirmState(null)}
+      />
     </div>
   );
 }

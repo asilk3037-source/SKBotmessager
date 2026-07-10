@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import TemplatesPage from '../TemplatesPage.jsx';
 import { api } from '../../api.js';
@@ -132,13 +132,15 @@ describe('TemplatesPage', () => {
   });
 
   it('deletes a template after confirmation', async () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
     api.listTemplates.mockResolvedValue([TEMPLATE]);
     api.deleteTemplate.mockResolvedValue(null);
     render(<TemplatesPage />);
 
     await waitFor(() => screen.getByText('Boas vindas'));
     await userEvent.click(screen.getByRole('button', { name: /remover/i }));
+
+    const dialog = await screen.findByRole('alertdialog');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Remover' }));
 
     expect(api.deleteTemplate).toHaveBeenCalledWith('t1');
   });

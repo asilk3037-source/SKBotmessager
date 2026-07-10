@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Routes, Route, NavLink, Navigate } from 'react-router-dom';
 import TitleBar from './components/TitleBar.jsx';
 import UploadPage from './pages/UploadPage.jsx';
@@ -25,11 +26,31 @@ const NAV_ITEMS = [
 ];
 
 export default function App() {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   return (
     <>
       <TitleBar />
       <div className="app-shell">
-        <aside className="sidebar">
+        <button
+          type="button"
+          className="menu-toggle"
+          aria-label={sidebarOpen ? 'Fechar menu' : 'Abrir menu'}
+          onClick={() => setSidebarOpen((open) => !open)}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+        </button>
+        {sidebarOpen && (
+          <button
+            type="button"
+            className="sidebar-backdrop"
+            aria-label="Fechar menu"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+        <aside className={`sidebar${sidebarOpen ? ' open' : ''}`}>
           <div className="sidebar-brand">SKBotmessager</div>
           <div className="sidebar-subtitle">Disparo em massa de SMS e WhatsApp</div>
           <nav>
@@ -38,6 +59,7 @@ export default function App() {
                 key={item.to}
                 to={item.to}
                 className={({ isActive }) => (isActive ? 'active' : '')}
+                onClick={() => setSidebarOpen(false)}
               >
                 <Icon path={item.icon} />
                 {item.label}
