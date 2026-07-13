@@ -135,13 +135,15 @@ export default function ContatosPage() {
                     <td>{b.importedCount}</td>
                     <td>{b.skippedCount}</td>
                     <td>{new Date(b.createdAt).toLocaleString('pt-BR')}</td>
-                    <td>
-                      <button className="btn btn-secondary btn-sm" onClick={() => setSelectedBatch(b.id)}>
-                        Filtrar
-                      </button>{' '}
-                      <button className="btn btn-danger btn-sm" onClick={() => handleDeleteBatch(b.id)}>
-                        Remover
-                      </button>
+                    <td aria-label="Ações">
+                      <div className="table-actions">
+                        <button className="btn btn-secondary btn-sm" onClick={() => setSelectedBatch(b.id)}>
+                          Filtrar
+                        </button>
+                        <button className="btn btn-danger btn-sm" onClick={() => handleDeleteBatch(b.id)}>
+                          Remover
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -198,10 +200,12 @@ export default function ContatosPage() {
                       <td>
                         {Object.entries(c.extras || {}).map(([k, v]) => `${k}: ${v}`).join(' · ')}
                       </td>
-                      <td>
-                        <button className="btn btn-danger btn-sm" onClick={() => handleDeleteContact(c.id)}>
-                          Remover
-                        </button>
+                      <td aria-label="Ações">
+                        <div className="table-actions">
+                          <button className="btn btn-danger btn-sm" onClick={() => handleDeleteContact(c.id)}>
+                            Remover
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}

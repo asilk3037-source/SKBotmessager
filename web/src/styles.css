@@ -463,6 +463,7 @@ th, td {
   text-align: left;
   padding: 11px 12px;
   border-bottom: 1px solid var(--border);
+  vertical-align: middle;
 }
 
 th {
@@ -476,6 +477,20 @@ th {
 tr:last-child td { border-bottom: none; }
 tbody tr { transition: background 0.1s; }
 tbody tr:hover td { background: var(--primary-light); }
+
+/* Action column (Editar/Remover/Filtrar buttons): shrinks to fit its
+   content and never wraps, so every row gets the same proportions
+   regardless of how wide the other columns' content is. */
+th[aria-label="Ações"], td:has(> .table-actions) {
+  width: 1%;
+  white-space: nowrap;
+}
+
+.table-actions {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
 
 tr.row-danger td:first-child { box-shadow: inset 3px 0 0 var(--danger); }
 tr.row-warning td:first-child { box-shadow: inset 3px 0 0 var(--warning); }
@@ -609,6 +624,39 @@ tr.row-warning td:first-child { box-shadow: inset 3px 0 0 var(--warning); }
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+/* Segmented control: a pill-shaped two/three-way toggle, used where a
+   plain <select> would understate that the choice is a small, fixed set
+   of mutually exclusive modes (e.g. "contatos cadastrados" vs "importar"). */
+.segmented {
+  display: inline-flex;
+  background: var(--surface-muted);
+  border: 0;
+  border-radius: var(--radius-sm);
+  padding: 3px;
+  margin: 0 0 14px;
+  gap: 2px;
+}
+
+.segmented button {
+  border: none;
+  background: transparent;
+  padding: 7px 14px;
+  border-radius: calc(var(--radius-sm) - 3px);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+}
+
+.segmented button:hover:not(.active) { color: var(--text); }
+
+.segmented button.active {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-sm);
 }
 
 .checkbox-row input { width: auto; }

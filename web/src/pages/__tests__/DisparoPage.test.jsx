@@ -13,7 +13,9 @@ vi.mock('../../api.js', () => ({
     listCampaigns: vi.fn(),
     createCampaign: vi.fn(),
     cancelCampaign: vi.fn(),
-    getCampaign: vi.fn()
+    getCampaign: vi.fn(),
+    previewSpreadsheet: vi.fn(),
+    importContacts: vi.fn()
   }
 }));
 
@@ -218,7 +220,7 @@ describe('DisparoPage - dispatch and progress', () => {
 
     await userEvent.click(screen.getByRole('button', { name: /novo disparo/i }));
 
-    expect(screen.getByText(/1\. escolha o lote de contatos/i)).toBeInTheDocument();
+    expect(screen.getByText(/1. escolha os contatos/i)).toBeInTheDocument();
   });
 });
 
@@ -266,7 +268,7 @@ describe('DisparoPage - scheduling', () => {
 
     await userEvent.click(screen.getByRole('button', { name: /cancelar agendamento/i }));
     await waitFor(() => expect(api.cancelCampaign).toHaveBeenCalledWith('camp-1'));
-    expect(screen.getByText(/1\. escolha o lote de contatos/i)).toBeInTheDocument();
+    expect(screen.getByText(/1. escolha os contatos/i)).toBeInTheDocument();
   });
 
   it('lists existing scheduled campaigns with a cancel button', async () => {
@@ -286,5 +288,57 @@ describe('DisparoPage - scheduling', () => {
 
     await userEvent.click(screen.getByRole('button', { name: /cancelar/i }));
     await waitFor(() => expect(api.cancelCampaign).toHaveBeenCalledWith('sched-1'));
+  });
+});
+
+describe('DisparoPage - importing a spreadsheet inline', () => {
+  const PREVIEW = {
+    fileName: 'novos.csv',
+    columns: ['Nome', 'Telefone'],
+    rows: [{ Nome: 'Paula', Telefone: '11955554444' }],
+    suggestedNameColumn: 'Nome',
+    suggestedPhoneColumn: 'Telefone',
+    suggestedEmailColumn: null
+  };
+
+  it('defaults to "Contatos já cadastrados" and switches to the upload form on demand', async () => {
+    renderPage();
+    await waitFor(() => expect(screen.getByText(/lote 1 \(2 contatos\)/i)).toBeInTheDocument());
+
+    expect(screen.queryByLabelText(/escolher arquivo de planilha/i)).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Importar nova planilha' }));
+
+    expect(screen.getByLabelText(/escolher arquivo de planilha/i)).toBeInTheDocument();
+    expect(screen.queryByText(/selecione um lote importado/i)).not.toBeInTheDocument();
+  });
+
+  it('imports a new spreadsheet and jumps straight into contact selection for the new batch', async () => {
+    api.previewSpreadsheet.mockResolvedValue(PREVIEW);
+    api.importContacts.mockResolvedValue({ batchId: 'b2', importedCount: 1, skippedCount: 0, skipped: [] });
+
+    renderPage();
+    await waitFor(() => expect(screen.getByText(/lote 1 \(2 contatos\)/i)).toBeInTheDocument());
+    await userEvent.click(screen.getByRole('button', { name: 'Importar nova planilha' }));
+
+    const file = new File(['a'], 'novos.csv', { type: 'text/csv' });
+    await userEvent.upload(document.querySelector('input[type=file]'), file);
+    await waitFor(() => screen.getByRole('button', { name: /importar 1 contato/i }));
+
+    api.listBatches.mockResolvedValue([
+      BATCH,
+      { id: 'b2', label: 'novos.csv', importedCount: 1 }
+    ]);
+    api.listContacts.mockResolvedValue({
+      total: 1,
+      contacts: [{ id: 'c3', name: 'Paula', phone: '11955554444', email: '', extras: {} }]
+    });
+
+    await userEvent.click(screen.getByRole('button', { name: /importar 1 contato/i }));
+
+    // Back on the "contatos já cadastrados" view, with the freshly imported batch selected.
+    await waitFor(() => expect(screen.getByText(/selecione os contatos \(1 de 1\)/i)).toBeInTheDocument());
+    expect(screen.getByText('Paula')).toBeInTheDocument();
+    expect(screen.queryByLabelText(/escolher arquivo de planilha/i)).not.toBeInTheDocument();
   });
 });

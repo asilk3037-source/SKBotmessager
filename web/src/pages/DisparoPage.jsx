@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { api } from '../api.js';
 import { CHANNEL_LABELS } from '../constants.js';
 import { renderPreview } from '../utils/renderPreview.js';
+import SpreadsheetImportForm from '../components/SpreadsheetImportForm.jsx';
 
 function getRecipient(channel, contact) {
   return channel === 'email' ? contact.email : contact.phone;
@@ -36,6 +37,7 @@ function Stepper({ currentIndex }) {
 export default function DisparoPage() {
   const [batches, setBatches] = useState([]);
   const [templates, setTemplates] = useState([]);
+  const [contactSource, setContactSource] = useState('existing');
   const [selectedBatch, setSelectedBatch] = useState('');
   const [contacts, setContacts] = useState([]);
   const [selectedIds, setSelectedIds] = useState(new Set());
@@ -56,11 +58,24 @@ export default function DisparoPage() {
       .catch((err) => setError(err.message));
   }
 
+  function loadBatches() {
+    return api.listBatches().then(setBatches).catch((err) => setError(err.message));
+  }
+
   useEffect(() => {
-    api.listBatches().then(setBatches).catch((err) => setError(err.message));
+    loadBatches();
     api.listTemplates().then(setTemplates).catch((err) => setError(err.message));
     loadScheduledCampaigns();
   }, []);
+
+  // After importing a fresh spreadsheet inline, switch back to the "existing
+  // batches" view with the new batch already selected, so the wizard
+  // continues straight into contact selection instead of dead-ending on a
+  // "success" screen the user would have to click through.
+  function handleSpreadsheetImported(result) {
+    setContactSource('existing');
+    loadBatches().then(() => setSelectedBatch(result.batchId));
+  }
 
   useEffect(() => {
     if (!selectedBatch) { setContacts([]); return; }
@@ -262,10 +277,12 @@ export default function DisparoPage() {
                     <td>{c.name}</td>
                     <td>{new Date(c.scheduledAt).toLocaleString('pt-BR')}</td>
                     <td>{c.totalCount}</td>
-                    <td>
-                      <button className="btn btn-danger btn-sm" onClick={() => handleCancelScheduled(c.id)}>
-                        Cancelar
-                      </button>
+                    <td aria-label="Ações">
+                      <div className="table-actions">
+                        <button className="btn btn-danger btn-sm" onClick={() => handleCancelScheduled(c.id)}>
+                          Cancelar
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -278,13 +295,37 @@ export default function DisparoPage() {
       <Stepper currentIndex={stepIndex} />
 
       <div className="card">
-        <h3>1. Escolha o lote de contatos</h3>
-        <select value={selectedBatch} onChange={(e) => setSelectedBatch(e.target.value)}>
-          <option value="">Selecione um lote importado...</option>
-          {batches.map((b) => <option key={b.id} value={b.id}>{b.label} ({b.importedCount} contatos)</option>)}
-        </select>
-        {batches.length === 0 && (
-          <p className="helper-text">Nenhum lote importado. <Link to="/upload">Importe uma planilha primeiro</Link>.</p>
+        <h3>1. Escolha os contatos</h3>
+        <fieldset className="segmented">
+          <legend className="sr-only">Origem dos contatos</legend>
+          <button
+            type="button"
+            className={contactSource === 'existing' ? 'active' : ''}
+            onClick={() => setContactSource('existing')}
+          >
+            Contatos já cadastrados
+          </button>
+          <button
+            type="button"
+            className={contactSource === 'upload' ? 'active' : ''}
+            onClick={() => setContactSource('upload')}
+          >
+            Importar nova planilha
+          </button>
+        </fieldset>
+
+        {contactSource === 'existing' ? (
+          <>
+            <select value={selectedBatch} onChange={(e) => setSelectedBatch(e.target.value)}>
+              <option value="">Selecione um lote importado...</option>
+              {batches.map((b) => <option key={b.id} value={b.id}>{b.label} ({b.importedCount} contatos)</option>)}
+            </select>
+            {batches.length === 0 && (
+              <p className="helper-text">Nenhum lote importado. <Link to="/upload">Importe uma planilha primeiro</Link>.</p>
+            )}
+          </>
+        ) : (
+          <SpreadsheetImportForm onImported={handleSpreadsheetImported} />
         )}
       </div>
 

@@ -303,9 +303,11 @@ export default function TemplatesPage() {
                   <td>{CHANNEL_LABELS[t.channel] ?? t.channel}</td>
                   <td style={{ maxWidth: 320, whiteSpace: 'pre-wrap' }}>{t.content}</td>
                   <td>{t.isDefault && <span className="badge badge-success">Padrão</span>}</td>
-                  <td>
-                    <button className="btn btn-secondary btn-sm" onClick={() => setForm({ ...EMPTY_FORM, ...t })}>Editar</button>{' '}
-                    <button className="btn btn-danger btn-sm" onClick={() => handleDelete(t.id)}>Remover</button>
+                  <td aria-label="Ações">
+                    <div className="table-actions">
+                      <button className="btn btn-secondary btn-sm" onClick={() => setForm({ ...EMPTY_FORM, ...t })}>Editar</button>
+                      <button className="btn btn-danger btn-sm" onClick={() => handleDelete(t.id)}>Remover</button>
+                    </div>
                   </td>
                 </tr>
               ))}
